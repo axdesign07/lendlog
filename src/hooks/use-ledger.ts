@@ -10,11 +10,14 @@ export interface Ledger {
   inviteCode: string;
 }
 
+const SELECTED_LEDGER_KEY = "lendlog-selected-ledger";
+
 export function useLedger(userId: string | null) {
-  const [ledger, setLedger] = useState<Ledger | null>(null);
+  const [ledgers, setLedgers] = useState<Ledger[]>([]);
+  const [selectedLedgerId, setSelectedLedgerId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadLedger = useCallback(async () => {
+  const loadLedgers = useCallback(async () => {
     if (!userId) {
       setLoading(false);
       return;
@@ -25,35 +28,48 @@ export function useLedger(userId: string | null) {
         .from("ledgers")
         .select("*")
         .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
-        .limit(1)
-        .single();
+        .order("created_at", { ascending: true });
 
-      if (data) {
-        setLedger({
-          id: data.id,
-          user1Id: data.user1_id,
-          user2Id: data.user2_id,
-          inviteCode: data.invite_code,
-        });
+      if (data && data.length > 0) {
+        const mapped: Ledger[] = data.map((row) => ({
+          id: row.id,
+          user1Id: row.user1_id,
+          user2Id: row.user2_id,
+          inviteCode: row.invite_code,
+        }));
+        setLedgers(mapped);
+
+        // Restore selected ledger from localStorage, or pick the first one
+        const stored = localStorage.getItem(SELECTED_LEDGER_KEY);
+        const valid = mapped.find((l) => l.id === stored);
+        if (valid) {
+          setSelectedLedgerId(valid.id);
+        } else {
+          setSelectedLedgerId(mapped[0].id);
+          localStorage.setItem(SELECTED_LEDGER_KEY, mapped[0].id);
+        }
+      } else {
+        setLedgers([]);
+        setSelectedLedgerId(null);
       }
     } catch {
-      // No ledger found — that's fine
+      // No ledgers found — that's fine
     } finally {
       setLoading(false);
     }
   }, [userId]);
 
   useEffect(() => {
-    loadLedger();
+    loadLedgers();
 
-    // Listen for ledger changes (partner joining)
+    // Listen for ledger changes (partner joining, new ledgers)
     const channel = supabase
       .channel("ledgers-realtime")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "ledgers" },
         () => {
-          loadLedger();
+          loadLedgers();
         }
       )
       .subscribe();
@@ -61,7 +77,12 @@ export function useLedger(userId: string | null) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [loadLedger]);
+  }, [loadLedgers]);
+
+  const selectLedger = useCallback((id: string) => {
+    setSelectedLedgerId(id);
+    localStorage.setItem(SELECTED_LEDGER_KEY, id);
+  }, []);
 
   const createLedger = useCallback(async (): Promise<Ledger | null> => {
     if (!userId) return null;
@@ -80,7 +101,9 @@ export function useLedger(userId: string | null) {
       user2Id: data.user2_id,
       inviteCode: data.invite_code,
     };
-    setLedger(newLedger);
+    setLedgers((prev) => [...prev, newLedger]);
+    setSelectedLedgerId(newLedger.id);
+    localStorage.setItem(SELECTED_LEDGER_KEY, newLedger.id);
     return newLedger;
   }, [userId]);
 
@@ -88,7 +111,6 @@ export function useLedger(userId: string | null) {
     async (inviteCode: string): Promise<Ledger | null> => {
       if (!userId) return null;
 
-      // Join ledger atomically via RPC (bypasses RLS since user isn't member yet)
       const { data: found, error } = await supabase.rpc("join_ledger_by_invite", {
         code: inviteCode.trim(),
       });
@@ -105,25 +127,33 @@ export function useLedger(userId: string | null) {
         user2Id: row.user2_id,
         inviteCode: row.invite_code,
       };
-      setLedger(joined);
+      setLedgers((prev) => [...prev, joined]);
+      setSelectedLedgerId(joined.id);
+      localStorage.setItem(SELECTED_LEDGER_KEY, joined.id);
       return joined;
     },
     [userId]
   );
 
-  // Who is the other user?
-  const partnerId = ledger
-    ? ledger.user1Id === userId
-      ? ledger.user2Id
-      : ledger.user1Id
+  // Selected ledger object
+  const selectedLedger = ledgers.find((l) => l.id === selectedLedgerId) ?? null;
+
+  // Who is the other user in the selected ledger?
+  const partnerId = selectedLedger
+    ? selectedLedger.user1Id === userId
+      ? selectedLedger.user2Id
+      : selectedLedger.user1Id
     : null;
 
   return {
-    ledger,
+    ledgers,
+    selectedLedger,
+    selectedLedgerId,
+    selectLedger,
     loading,
     createLedger,
     joinLedger,
     partnerId,
-    refresh: loadLedger,
+    refresh: loadLedgers,
   };
 }

@@ -115,6 +115,14 @@ const translations = {
     reject: "Reject",
     resend: "Resend",
     editAndResend: "Edit & Resend",
+
+    // Multi-ledger & Portfolio
+    portfolio: "Portfolio",
+    totalNetWorth: "Total Net Worth",
+    allFriends: "All Friends",
+    addFriend: "Add new friend",
+    friends: "Friends",
+    switchFriend: "Switch friend",
   },
   fr: {
     appName: "LendLog",
@@ -203,6 +211,13 @@ const translations = {
     reject: "Refuser",
     resend: "Renvoyer",
     editAndResend: "Modifier & Renvoyer",
+
+    portfolio: "Portefeuille",
+    totalNetWorth: "Valeur nette totale",
+    allFriends: "Tous les amis",
+    addFriend: "Ajouter un ami",
+    friends: "Amis",
+    switchFriend: "Changer d'ami",
   },
   ar: {
     appName: "LendLog",
@@ -291,6 +306,13 @@ const translations = {
     reject: "\u0631\u0641\u0636",
     resend: "\u0625\u0639\u0627\u062F\u0629 \u0625\u0631\u0633\u0627\u0644",
     editAndResend: "\u062A\u0639\u062F\u064A\u0644 \u0648\u0625\u0639\u0627\u062F\u0629 \u0625\u0631\u0633\u0627\u0644",
+
+    portfolio: "\u0627\u0644\u0645\u062D\u0641\u0638\u0629",
+    totalNetWorth: "\u0625\u062C\u0645\u0627\u0644\u064A \u0627\u0644\u0631\u0635\u064A\u062F",
+    allFriends: "\u0643\u0644 \u0627\u0644\u0623\u0635\u062F\u0642\u0627\u0621",
+    addFriend: "\u0625\u0636\u0627\u0641\u0629 \u0635\u062F\u064A\u0642",
+    friends: "\u0627\u0644\u0623\u0635\u062F\u0642\u0627\u0621",
+    switchFriend: "\u062A\u063A\u064A\u064A\u0631 \u0627\u0644\u0635\u062F\u064A\u0642",
   },
   darija: {
     appName: "LendLog",
@@ -379,6 +401,13 @@ const translations = {
     reject: "\u0631\u0641\u0636",
     resend: "\u0635\u064A\u0641\u0637 \u0645\u0631\u0629 \u062E\u0631\u0649",
     editAndResend: "\u0628\u062F\u0644 \u0648\u0635\u064A\u0641\u0637",
+
+    portfolio: "\u0627\u0644\u0645\u062D\u0641\u0638\u0629",
+    totalNetWorth: "\u0645\u062C\u0645\u0648\u0639 \u0627\u0644\u0641\u0644\u0648\u0633",
+    allFriends: "\u0643\u0627\u0639 \u0627\u0644\u0635\u062D\u0627\u0628",
+    addFriend: "\u0632\u064A\u062F \u0635\u0627\u062D\u0628",
+    friends: "\u0627\u0644\u0635\u062D\u0627\u0628",
+    switchFriend: "\u0628\u062F\u0644 \u0627\u0644\u0635\u0627\u062D\u0628",
   },
 };
 

@@ -5,7 +5,7 @@ import { getSettings, saveSettings } from "@/lib/supabase-db";
 import { supabase } from "@/lib/supabase";
 import type { AppSettings } from "@/types";
 
-export function useSettings(userId: string | null) {
+export function useSettings(userId: string | null, ledgerId?: string | null) {
   const [settings, setSettings] = useState<AppSettings>({ friendName: "Friend" });
   const [loading, setLoading] = useState(true);
 
@@ -15,18 +15,18 @@ export function useSettings(userId: string | null) {
       return;
     }
     try {
-      const data = await getSettings(userId);
+      const data = await getSettings(userId, ledgerId ?? undefined);
       setSettings(data);
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, ledgerId]);
 
   useEffect(() => {
     loadSettings();
 
     const channel = supabase
-      .channel("settings-realtime")
+      .channel(`settings-realtime-${ledgerId ?? "global"}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "settings" },
@@ -39,16 +39,16 @@ export function useSettings(userId: string | null) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [loadSettings]);
+  }, [loadSettings, ledgerId]);
 
   const updateFriendName = useCallback(
     async (name: string) => {
       if (!userId) return;
       const updated = { friendName: name.trim() || "Friend" };
-      await saveSettings(updated, userId);
+      await saveSettings(updated, userId, ledgerId ?? undefined);
       setSettings(updated);
     },
-    [userId]
+    [userId, ledgerId]
   );
 
   return { settings, loading, updateFriendName };

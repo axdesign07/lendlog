@@ -35,7 +35,7 @@ export function useEntries(userId: string | null, ledgerId: string | null) {
   const loadEntries = useCallback(async () => {
     if (!userId) return;
     try {
-      const data = await getActiveEntries();
+      const data = await getActiveEntries(ledgerId ?? undefined);
       // Apply perspective flip for current user
       setEntries(data.map((e) => flipPerspective(e, userId)));
     } catch {
@@ -43,7 +43,7 @@ export function useEntries(userId: string | null, ledgerId: string | null) {
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, ledgerId]);
 
   useEffect(() => {
     loadEntries();

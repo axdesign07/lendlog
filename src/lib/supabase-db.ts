@@ -78,23 +78,44 @@ function rowToAudit(row: AuditRow & { entries?: EntryRow }): AuditLogEntry {
 
 // --- Entry operations ---
 
-export async function getActiveEntries(): Promise<LendLogEntry[]> {
-  const { data, error } = await supabase
+export async function getActiveEntries(ledgerId?: string): Promise<LendLogEntry[]> {
+  let query = supabase
     .from("entries")
     .select("*")
     .is("deleted_at", null)
     .order("timestamp", { ascending: false });
 
+  if (ledgerId) {
+    query = query.eq("ledger_id", ledgerId);
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   return (data as EntryRow[]).map(rowToEntry);
 }
 
-export async function getDeletedEntries(): Promise<LendLogEntry[]> {
-  const { data, error } = await supabase
+export async function getDeletedEntries(ledgerId?: string): Promise<LendLogEntry[]> {
+  let query = supabase
     .from("entries")
     .select("*")
     .not("deleted_at", "is", null)
     .order("deleted_at", { ascending: false });
+
+  if (ledgerId) {
+    query = query.eq("ledger_id", ledgerId);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data as EntryRow[]).map(rowToEntry);
+}
+
+export async function getAllActiveEntries(): Promise<LendLogEntry[]> {
+  const { data, error } = await supabase
+    .from("entries")
+    .select("*")
+    .is("deleted_at", null)
+    .order("timestamp", { ascending: false });
 
   if (error) throw error;
   return (data as EntryRow[]).map(rowToEntry);
@@ -263,29 +284,48 @@ export async function deleteImage(url: string): Promise<void> {
   await supabase.storage.from("images").remove([path]);
 }
 
-// --- Settings operations (per-user) ---
+// --- Settings operations (per-user, per-ledger) ---
 
-export async function getSettings(userId: string): Promise<AppSettings> {
+export async function getSettings(userId: string, ledgerId?: string): Promise<AppSettings> {
+  if (!ledgerId) return { friendName: "Friend" };
+
   const { data, error } = await supabase
     .from("settings")
     .select("*")
     .eq("user_id", userId)
+    .eq("ledger_id", ledgerId)
     .single();
 
   if (error || !data) return { friendName: "Friend" };
   return { friendName: data.friend_name };
 }
 
-export async function saveSettings(settings: AppSettings, userId: string): Promise<void> {
+export async function saveSettings(settings: AppSettings, userId: string, ledgerId?: string): Promise<void> {
+  if (!ledgerId) return;
+
   const { error } = await supabase
     .from("settings")
     .upsert({
       user_id: userId,
+      ledger_id: ledgerId,
       friend_name: settings.friendName,
       updated_at: Date.now(),
     });
 
   if (error) throw error;
+}
+
+export async function getAllSettings(userId: string): Promise<{ ledgerId: string; friendName: string }[]> {
+  const { data, error } = await supabase
+    .from("settings")
+    .select("*")
+    .eq("user_id", userId);
+
+  if (error || !data) return [];
+  return data.map((row: { ledger_id: string; friend_name: string }) => ({
+    ledgerId: row.ledger_id,
+    friendName: row.friend_name,
+  }));
 }
 
 // --- Audit log operations ---

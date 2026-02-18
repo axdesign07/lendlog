@@ -28,8 +28,10 @@ export function LoginPage({ t }: LoginPageProps) {
       const { error } = await signInWithMagicLink(email.trim(), redirectTo);
       if (error) throw error;
       setSent(true);
-    } catch {
-      toast.error("Failed to send magic link");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("Magic link error:", msg);
+      toast.error(msg || "Failed to send magic link");
     } finally {
       setSending(false);
     }
