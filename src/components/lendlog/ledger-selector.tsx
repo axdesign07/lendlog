@@ -43,7 +43,7 @@ export function LedgerSelector({
           className="h-9 gap-1 px-2.5 text-xl font-bold tracking-tight"
         >
           {currentName}
-          {ledgers.length > 1 && <ChevronDown className="h-4 w-4 opacity-50" />}
+          <ChevronDown className="h-4 w-4 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">
