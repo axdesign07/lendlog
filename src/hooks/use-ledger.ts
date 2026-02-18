@@ -88,31 +88,22 @@ export function useLedger(userId: string | null) {
     async (inviteCode: string): Promise<Ledger | null> => {
       if (!userId) return null;
 
-      // Look up ledger by invite code
-      const { data: found } = await supabase.rpc("get_ledger_by_invite", {
+      // Join ledger atomically via RPC (bypasses RLS since user isn't member yet)
+      const { data: found, error } = await supabase.rpc("join_ledger_by_invite", {
         code: inviteCode.trim(),
       });
 
+      if (error) throw error;
       if (!found || found.length === 0) {
         throw new Error("Invalid or expired invite code");
       }
 
-      const ledgerId = found[0].id;
-
-      const { data, error } = await supabase
-        .from("ledgers")
-        .update({ user2_id: userId })
-        .eq("id", ledgerId)
-        .select()
-        .single();
-
-      if (error) throw error;
-
+      const row = found[0];
       const joined: Ledger = {
-        id: data.id,
-        user1Id: data.user1_id,
-        user2Id: data.user2_id,
-        inviteCode: data.invite_code,
+        id: row.id,
+        user1Id: row.user1_id,
+        user2Id: row.user2_id,
+        inviteCode: row.invite_code,
       };
       setLedger(joined);
       return joined;
