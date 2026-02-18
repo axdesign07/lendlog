@@ -95,6 +95,7 @@ export async function migrateToSupabase(
       timestamp: entry.timestamp,
       createdAt: entry.createdAt,
       updatedAt: entry.updatedAt,
+      status: "approved",
     };
 
     migratedEntries.push(migratedEntry);

@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import type { LendLogEntry, AppSettings, AuditLogEntry, AuditAction, Currency, EntryType } from "@/types";
+import type { LendLogEntry, AppSettings, AuditLogEntry, AuditAction, Currency, EntryType, EntryStatus } from "@/types";
 
 // --- Snake/Camel case helpers ---
 
@@ -16,6 +16,7 @@ interface EntryRow {
   deleted_at: number | null;
   created_by: string | null;
   ledger_id: string | null;
+  status: string;
 }
 
 interface AuditRow {
@@ -41,6 +42,7 @@ function rowToEntry(row: EntryRow): LendLogEntry {
     deletedAt: row.deleted_at ?? undefined,
     createdBy: row.created_by ?? undefined,
     ledgerId: row.ledger_id ?? undefined,
+    status: (row.status as EntryStatus) || "pending",
   };
 }
 
@@ -58,6 +60,7 @@ function entryToRow(entry: LendLogEntry): EntryRow {
     deleted_at: entry.deletedAt ?? null,
     created_by: entry.createdBy ?? null,
     ledger_id: entry.ledgerId ?? null,
+    status: entry.status || "pending",
   };
 }
 
@@ -131,6 +134,7 @@ export async function createEntry(
     createdAt: Date.now(),
     createdBy: userId,
     ledgerId,
+    status: "pending",
   };
 
   const { error } = await supabase.from("entries").insert(entryToRow(entry));
@@ -142,7 +146,7 @@ export async function createEntry(
 
 export async function updateEntry(
   id: string,
-  updates: Partial<Pick<LendLogEntry, "type" | "amount" | "currency" | "note" | "imageUrl" | "timestamp">>,
+  updates: Partial<Pick<LendLogEntry, "type" | "amount" | "currency" | "note" | "imageUrl" | "timestamp" | "status">>,
   oldEntry: LendLogEntry,
   userId: string
 ): Promise<LendLogEntry> {
@@ -170,6 +174,42 @@ export async function updateEntry(
   }
 
   return updated;
+}
+
+export async function approveEntry(id: string, userId: string): Promise<void> {
+  const now = Date.now();
+  const { error } = await supabase
+    .from("entries")
+    .update({ status: "approved", updated_at: now })
+    .eq("id", id);
+
+  if (error) throw error;
+
+  await createAuditLog(id, "updated", { status: { from: "pending", to: "approved" } }, userId);
+}
+
+export async function rejectEntry(id: string, userId: string): Promise<void> {
+  const now = Date.now();
+  const { error } = await supabase
+    .from("entries")
+    .update({ status: "rejected", updated_at: now })
+    .eq("id", id);
+
+  if (error) throw error;
+
+  await createAuditLog(id, "updated", { status: { from: "pending", to: "rejected" } }, userId);
+}
+
+export async function resendEntry(id: string, userId: string): Promise<void> {
+  const now = Date.now();
+  const { error } = await supabase
+    .from("entries")
+    .update({ status: "pending", updated_at: now })
+    .eq("id", id);
+
+  if (error) throw error;
+
+  await createAuditLog(id, "updated", { status: { from: "rejected", to: "pending" } }, userId);
 }
 
 export async function softDeleteEntry(id: string, userId: string): Promise<void> {
@@ -292,6 +332,7 @@ export async function bulkInsertEntries(
     ...e,
     createdBy: e.createdBy ?? userId,
     ledgerId: e.ledgerId ?? ledgerId,
+    status: e.status || "approved" as EntryStatus,
   }));
 
   const rows = stamped.map(entryToRow);

@@ -4,6 +4,9 @@ export function calculateNetBalances(entries: LendLogEntry[]): NetBalance[] {
   const balanceMap = new Map<Currency, number>();
 
   for (const entry of entries) {
+    // Only approved entries count toward the balance
+    if (entry.status !== "approved") continue;
+
     const current = balanceMap.get(entry.currency) || 0;
 
     if (entry.type === "lent") {

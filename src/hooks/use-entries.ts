@@ -7,6 +7,9 @@ import {
   updateEntry as dbUpdateEntry,
   softDeleteEntry,
   restoreEntry as dbRestoreEntry,
+  approveEntry as dbApproveEntry,
+  rejectEntry as dbRejectEntry,
+  resendEntry as dbResendEntry,
   uploadImage,
 } from "@/lib/supabase-db";
 import { supabase } from "@/lib/supabase";
@@ -104,7 +107,8 @@ export function useEntries(userId: string | null, ledgerId: string | null) {
       id: string,
       updates: Partial<
         Pick<LendLogEntry, "type" | "amount" | "currency" | "note" | "timestamp">
-      > & { image?: File }
+      > & { image?: File },
+      resetStatus?: boolean
     ) => {
       if (!userId) return;
 
@@ -132,9 +136,12 @@ export function useEntries(userId: string | null, ledgerId: string | null) {
         ? { ...existing, type: existing.type === "lent" ? "borrowed" : "lent" }
         : existing;
 
+      // If resending a rejected entry, reset status to pending
+      const statusUpdate = resetStatus ? { status: "pending" as const } : {};
+
       const updated = await dbUpdateEntry(
         id,
-        { ...rest, type: dbType, imageUrl },
+        { ...rest, type: dbType, imageUrl, ...statusUpdate },
         rawExisting,
         userId
       );
@@ -171,5 +178,52 @@ export function useEntries(userId: string | null, ledgerId: string | null) {
     [loadEntries, userId]
   );
 
-  return { entries, loading, addEntry, updateEntry, removeEntry, restoreEntry, refresh: loadEntries };
+  const approveEntry = useCallback(
+    async (id: string) => {
+      if (!userId) return;
+      await dbApproveEntry(id, userId);
+      setEntries((prev) =>
+        prev.map((e) => (e.id === id ? { ...e, status: "approved" as const } : e))
+      );
+      toast.success("Entry approved");
+    },
+    [userId]
+  );
+
+  const rejectEntry = useCallback(
+    async (id: string) => {
+      if (!userId) return;
+      await dbRejectEntry(id, userId);
+      setEntries((prev) =>
+        prev.map((e) => (e.id === id ? { ...e, status: "rejected" as const } : e))
+      );
+      toast.success("Entry rejected");
+    },
+    [userId]
+  );
+
+  const resendEntry = useCallback(
+    async (id: string) => {
+      if (!userId) return;
+      await dbResendEntry(id, userId);
+      setEntries((prev) =>
+        prev.map((e) => (e.id === id ? { ...e, status: "pending" as const } : e))
+      );
+      toast.success("Entry resent for approval");
+    },
+    [userId]
+  );
+
+  return {
+    entries,
+    loading,
+    addEntry,
+    updateEntry,
+    removeEntry,
+    restoreEntry,
+    approveEntry,
+    rejectEntry,
+    resendEntry,
+    refresh: loadEntries,
+  };
 }

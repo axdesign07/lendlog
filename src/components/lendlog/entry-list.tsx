@@ -12,9 +12,13 @@ interface EntryListProps {
   locale: Locale;
   onEdit: (entry: LendLogEntry) => void;
   onDelete: (id: string) => void;
+  onApprove?: (id: string) => void;
+  onReject?: (id: string) => void;
+  onResend?: (id: string) => void;
+  currentUserId?: string | null;
 }
 
-export function EntryList({ entries, friendName, t, locale, onEdit, onDelete }: EntryListProps) {
+export function EntryList({ entries, friendName, t, locale, onEdit, onDelete, onApprove, onReject, onResend, currentUserId }: EntryListProps) {
   if (entries.length === 0) {
     return <EmptyState t={t} />;
   }
@@ -30,6 +34,10 @@ export function EntryList({ entries, friendName, t, locale, onEdit, onDelete }: 
           locale={locale}
           onEdit={onEdit}
           onDelete={onDelete}
+          onApprove={onApprove}
+          onReject={onReject}
+          onResend={onResend}
+          currentUserId={currentUserId}
         />
       ))}
     </div>

@@ -2,6 +2,8 @@ export type Currency = "MAD" | "USD" | "EUR" | "GBP" | "JPY" | "CAD" | "AUD";
 
 export type EntryType = "lent" | "borrowed";
 
+export type EntryStatus = "pending" | "approved" | "rejected";
+
 export interface LendLogEntry {
   id: string;
   type: EntryType;
@@ -15,6 +17,7 @@ export interface LendLogEntry {
   deletedAt?: number;
   createdBy?: string;
   ledgerId?: string;
+  status: EntryStatus;
 }
 
 export interface AppSettings {

@@ -106,6 +106,15 @@ const translations = {
     waitingForFriend: "Waiting for friend to join...",
     invalidInvite: "Invalid or expired invite code",
     yourInviteCode: "Your invite code",
+
+    // Approval
+    pendingApproval: "Pending",
+    approved: "Approved",
+    rejected: "Rejected",
+    approve: "Approve",
+    reject: "Reject",
+    resend: "Resend",
+    editAndResend: "Edit & Resend",
   },
   fr: {
     appName: "LendLog",
@@ -186,6 +195,14 @@ const translations = {
     waitingForFriend: "En attente de votre ami...",
     invalidInvite: "Code d'invitation invalide ou expir\u00E9",
     yourInviteCode: "Votre code d'invitation",
+
+    pendingApproval: "En attente",
+    approved: "Approuv\u00E9",
+    rejected: "Refus\u00E9",
+    approve: "Approuver",
+    reject: "Refuser",
+    resend: "Renvoyer",
+    editAndResend: "Modifier & Renvoyer",
   },
   ar: {
     appName: "LendLog",
@@ -266,6 +283,14 @@ const translations = {
     waitingForFriend: "\u0641\u064A \u0627\u0646\u062A\u0638\u0627\u0631 \u0627\u0646\u0636\u0645\u0627\u0645 \u0627\u0644\u0635\u062F\u064A\u0642...",
     invalidInvite: "\u0631\u0645\u0632 \u062F\u0639\u0648\u0629 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D \u0623\u0648 \u0645\u0646\u062A\u0647\u064A",
     yourInviteCode: "\u0631\u0645\u0632 \u0627\u0644\u062F\u0639\u0648\u0629 \u0627\u0644\u062E\u0627\u0635 \u0628\u0643",
+
+    pendingApproval: "\u0642\u064A\u062F \u0627\u0644\u0627\u0646\u062A\u0638\u0627\u0631",
+    approved: "\u0645\u0648\u0627\u0641\u0642 \u0639\u0644\u064A\u0647",
+    rejected: "\u0645\u0631\u0641\u0648\u0636",
+    approve: "\u0645\u0648\u0627\u0641\u0642\u0629",
+    reject: "\u0631\u0641\u0636",
+    resend: "\u0625\u0639\u0627\u062F\u0629 \u0625\u0631\u0633\u0627\u0644",
+    editAndResend: "\u062A\u0639\u062F\u064A\u0644 \u0648\u0625\u0639\u0627\u062F\u0629 \u0625\u0631\u0633\u0627\u0644",
   },
   darija: {
     appName: "LendLog",
@@ -346,6 +371,14 @@ const translations = {
     waitingForFriend: "\u0643\u0646\u062A\u0633\u0646\u0627 \u0635\u0627\u062D\u0628\u0643 \u064A\u062F\u062E\u0644...",
     invalidInvite: "\u0627\u0644\u0643\u0648\u062F \u0645\u0627\u0634\u064A \u0635\u062D\u064A\u062D \u0648\u0644\u0627 \u0633\u0627\u0644\u0627 \u0635\u0644\u0627\u062D\u064A\u062A\u0648",
     yourInviteCode: "\u0627\u0644\u0643\u0648\u062F \u062F\u064A\u0627\u0644\u0643",
+
+    pendingApproval: "\u0643\u064A\u062A\u0633\u0646\u0627",
+    approved: "\u0645\u0642\u0628\u0648\u0644",
+    rejected: "\u0645\u0631\u0641\u0648\u0636",
+    approve: "\u0642\u0628\u0644",
+    reject: "\u0631\u0641\u0636",
+    resend: "\u0635\u064A\u0641\u0637 \u0645\u0631\u0629 \u062E\u0631\u0649",
+    editAndResend: "\u0628\u062F\u0644 \u0648\u0635\u064A\u0641\u0637",
   },
 };
 

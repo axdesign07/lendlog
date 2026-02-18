@@ -40,7 +40,7 @@ export default function Home() {
   const { ledger, loading: ledgerLoading, createLedger, joinLedger } = useLedger(userId);
   const ledgerId = ledger?.id ?? null;
 
-  const { entries, loading, addEntry, updateEntry, removeEntry, restoreEntry } = useEntries(userId, ledgerId);
+  const { entries, loading, addEntry, updateEntry, removeEntry, restoreEntry, approveEntry, rejectEntry, resendEntry } = useEntries(userId, ledgerId);
   const { settings, updateFriendName } = useSettings(userId);
 
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -101,7 +101,9 @@ export default function Home() {
     timestamp?: number;
   }) => {
     if (editEntry) {
-      await updateEntry(editEntry.id, data);
+      // If editing a rejected entry, reset status to pending
+      const resetStatus = editEntry.status === "rejected";
+      await updateEntry(editEntry.id, data, resetStatus);
     } else {
       await addEntry(data);
     }
@@ -132,7 +134,7 @@ export default function Home() {
     );
   }
 
-  if (!ledger || !ledger.user2Id) {
+  if (!ledger) {
     return (
       <OnboardingPage
         t={t}
@@ -252,6 +254,10 @@ export default function Home() {
             locale={locale}
             onEdit={handleEdit}
             onDelete={removeEntry}
+            onApprove={approveEntry}
+            onReject={rejectEntry}
+            onResend={resendEntry}
+            currentUserId={userId}
           />
         </div>
 
