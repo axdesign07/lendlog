@@ -1,65 +1,263 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { Plus, Settings, Sun, Moon, Globe, Check, Clock, Download } from "lucide-react";
+import { useTheme } from "@/hooks/use-theme";
+import { useLocale } from "@/hooks/use-locale";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useEntries } from "@/hooks/use-entries";
+import { useSettings } from "@/hooks/use-settings";
+import { BalanceSummary } from "@/components/lendlog/balance-summary";
+import { EntryList } from "@/components/lendlog/entry-list";
+import { FilterBar } from "@/components/lendlog/filter-bar";
+import { AddEntrySheet } from "@/components/lendlog/add-entry-sheet";
+import { SettingsDialog } from "@/components/lendlog/settings-dialog";
+import { HistorySheet } from "@/components/lendlog/history-sheet";
+import { ExportSheet } from "@/components/lendlog/export-sheet";
+import { MigrationDialog } from "@/components/lendlog/migration-dialog";
+import { checkMigrationNeeded, migrateToSupabase, skipMigration } from "@/lib/migrate";
+import { LOCALES, type Locale } from "@/lib/i18n";
+import type { LendLogEntry, Currency, EntryType } from "@/types";
+
+type TypeFilter = EntryType | "all";
 
 export default function Home() {
+  const { entries, loading, addEntry, updateEntry, removeEntry, restoreEntry } = useEntries();
+  const { settings, updateFriendName } = useSettings();
+  const { theme, toggle: toggleTheme } = useTheme();
+  const { locale, setLocale, t } = useLocale();
+
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [editEntry, setEditEntry] = useState<LendLogEntry | null>(null);
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [currencyFilter, setCurrencyFilter] = useState<Currency | "all">("all");
+
+  // Migration
+  const [migrationOpen, setMigrationOpen] = useState(false);
+  const [migrationCount, setMigrationCount] = useState(0);
+
+  useEffect(() => {
+    checkMigrationNeeded().then(({ needed, entryCount }) => {
+      if (needed) {
+        setMigrationCount(entryCount);
+        setMigrationOpen(true);
+      }
+    });
+  }, []);
+
+  const handleMigrate = useCallback(async () => {
+    await migrateToSupabase(() => {});
+    // Refresh entries after migration
+    window.location.reload();
+  }, []);
+
+  const handleSkip = useCallback(() => {
+    skipMigration();
+  }, []);
+
+  const filteredEntries = useMemo(() => {
+    return entries.filter((e) => {
+      if (typeFilter !== "all" && e.type !== typeFilter) return false;
+      if (currencyFilter !== "all" && e.currency !== currencyFilter) return false;
+      return true;
+    });
+  }, [entries, typeFilter, currencyFilter]);
+
+  const handleEdit = (entry: LendLogEntry) => {
+    setEditEntry(entry);
+    setSheetOpen(true);
+  };
+
+  const handleAdd = () => {
+    setEditEntry(null);
+    setSheetOpen(true);
+  };
+
+  const handleSubmit = async (data: {
+    type: EntryType;
+    amount: number;
+    currency: Currency;
+    note?: string;
+    image?: File;
+    timestamp?: number;
+  }) => {
+    if (editEntry) {
+      await updateEntry(editEntry.id, data);
+    } else {
+      await addEntry(data);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-pulse text-muted-foreground text-sm">{t.loading}</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto max-w-xl">
+        {/* Header */}
+        <header className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+          <div className="flex items-center justify-between px-4 h-14">
+            <h1 className="text-xl font-bold tracking-tight">{t.appName}</h1>
+            <div className="flex items-center gap-1">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 gap-1.5 px-2.5 text-xs font-medium"
+                  >
+                    <Globe className="h-[15px] w-[15px]" />
+                    {LOCALES.find((l) => l.value === locale)?.label}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {LOCALES.map((l) => (
+                    <DropdownMenuItem
+                      key={l.value}
+                      onClick={() => setLocale(l.value)}
+                      className="gap-2"
+                    >
+                      {l.label}
+                      {locale === l.value && <Check className="h-4 w-4 ms-auto" />}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => setHistoryOpen(true)}
+              >
+                <Clock className="h-[18px] w-[18px]" />
+                <span className="sr-only">{t.history}</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => setExportOpen(true)}
+              >
+                <Download className="h-[18px] w-[18px]" />
+                <span className="sr-only">{t.export}</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9"
+                onClick={toggleTheme}
+              >
+                {theme === "light" ? (
+                  <Moon className="h-[18px] w-[18px]" />
+                ) : (
+                  <Sun className="h-[18px] w-[18px]" />
+                )}
+                <span className="sr-only">{t.toggleTheme}</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => setSettingsOpen(true)}
+              >
+                <Settings className="h-[18px] w-[18px]" />
+                <span className="sr-only">{t.settings}</span>
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        {/* Balance Summary */}
+        <BalanceSummary entries={entries} friendName={settings.friendName} t={t} />
+
+        {/* Filter Bar */}
+        {entries.length > 0 && (
+          <FilterBar
+            typeFilter={typeFilter}
+            currencyFilter={currencyFilter}
+            t={t}
+            onTypeFilterChange={setTypeFilter}
+            onCurrencyFilterChange={setCurrencyFilter}
+          />
+        )}
+
+        {/* Entry List */}
+        <div className="px-4 pb-24">
+          <EntryList
+            entries={filteredEntries}
+            friendName={settings.friendName}
+            t={t}
+            locale={locale}
+            onEdit={handleEdit}
+            onDelete={removeEntry}
+          />
+        </div>
+
+        {/* FAB */}
+        <Button
+          size="icon"
+          className="fixed bottom-6 right-6 rtl:right-auto rtl:left-6 h-14 w-14 rounded-full shadow-lg z-30"
+          onClick={handleAdd}
+        >
+          <Plus className="h-6 w-6" />
+          <span className="sr-only">{t.addEntryButton}</span>
+        </Button>
+
+        {/* Sheets & Dialogs */}
+        <AddEntrySheet
+          open={sheetOpen}
+          onOpenChange={setSheetOpen}
+          editEntry={editEntry}
+          t={t}
+          onSubmit={handleSubmit}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+
+        <SettingsDialog
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          friendName={settings.friendName}
+          t={t}
+          onSave={updateFriendName}
+        />
+
+        <HistorySheet
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          t={t}
+          locale={locale}
+          onRestore={restoreEntry}
+        />
+
+        <ExportSheet
+          open={exportOpen}
+          onOpenChange={setExportOpen}
+          entries={entries}
+          friendName={settings.friendName}
+          t={t}
+        />
+
+        <MigrationDialog
+          open={migrationOpen}
+          onOpenChange={setMigrationOpen}
+          entryCount={migrationCount}
+          onMigrate={handleMigrate}
+          onSkip={handleSkip}
+        />
+      </div>
     </div>
   );
 }
