@@ -13,6 +13,8 @@ export interface LendLogEntry {
   createdAt: number;
   updatedAt?: number;
   deletedAt?: number;
+  createdBy?: string;
+  ledgerId?: string;
 }
 
 export interface AppSettings {
@@ -40,6 +42,7 @@ export interface AuditLogEntry {
   action: AuditAction;
   changes: Record<string, { from: unknown; to: unknown }> | { snapshot: LendLogEntry } | null;
   createdAt: number;
+  userId?: string;
   entry?: LendLogEntry;
 }
 

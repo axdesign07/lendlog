@@ -4,6 +4,8 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { Plus, Settings, Sun, Moon, Globe, Check, Clock, Download } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { useLocale } from "@/hooks/use-locale";
+import { useAuth } from "@/hooks/use-auth";
+import { useLedger } from "@/hooks/use-ledger";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -21,6 +23,8 @@ import { SettingsDialog } from "@/components/lendlog/settings-dialog";
 import { HistorySheet } from "@/components/lendlog/history-sheet";
 import { ExportSheet } from "@/components/lendlog/export-sheet";
 import { MigrationDialog } from "@/components/lendlog/migration-dialog";
+import { LoginPage } from "@/components/lendlog/login-page";
+import { OnboardingPage } from "@/components/lendlog/onboarding-page";
 import { checkMigrationNeeded, migrateToSupabase, skipMigration } from "@/lib/migrate";
 import { LOCALES, type Locale } from "@/lib/i18n";
 import type { LendLogEntry, Currency, EntryType } from "@/types";
@@ -28,10 +32,16 @@ import type { LendLogEntry, Currency, EntryType } from "@/types";
 type TypeFilter = EntryType | "all";
 
 export default function Home() {
-  const { entries, loading, addEntry, updateEntry, removeEntry, restoreEntry } = useEntries();
-  const { settings, updateFriendName } = useSettings();
-  const { theme, toggle: toggleTheme } = useTheme();
+  const { user, loading: authLoading, signOut } = useAuth();
   const { locale, setLocale, t } = useLocale();
+  const { theme, toggle: toggleTheme } = useTheme();
+
+  const userId = user?.id ?? null;
+  const { ledger, loading: ledgerLoading, createLedger, joinLedger } = useLedger(userId);
+  const ledgerId = ledger?.id ?? null;
+
+  const { entries, loading, addEntry, updateEntry, removeEntry, restoreEntry } = useEntries(userId, ledgerId);
+  const { settings, updateFriendName } = useSettings(userId);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -46,19 +56,19 @@ export default function Home() {
   const [migrationCount, setMigrationCount] = useState(0);
 
   useEffect(() => {
+    if (!userId || !ledgerId) return;
     checkMigrationNeeded().then(({ needed, entryCount }) => {
       if (needed) {
         setMigrationCount(entryCount);
         setMigrationOpen(true);
       }
     });
-  }, []);
+  }, [userId, ledgerId]);
 
   const handleMigrate = useCallback(async () => {
-    await migrateToSupabase(() => {});
-    // Refresh entries after migration
+    await migrateToSupabase(() => {}, userId ?? undefined, ledgerId ?? undefined);
     window.location.reload();
-  }, []);
+  }, [userId, ledgerId]);
 
   const handleSkip = useCallback(() => {
     skipMigration();
@@ -96,6 +106,44 @@ export default function Home() {
       await addEntry(data);
     }
   };
+
+  // --- Auth gates ---
+
+  // Loading auth
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-pulse text-muted-foreground text-sm">{t.loading}</div>
+      </div>
+    );
+  }
+
+  // Not logged in → login page
+  if (!user) {
+    return <LoginPage t={t} />;
+  }
+
+  // Logged in but no ledger yet (or still loading) → onboarding
+  if (ledgerLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-pulse text-muted-foreground text-sm">{t.loading}</div>
+      </div>
+    );
+  }
+
+  if (!ledger || !ledger.user2Id) {
+    return (
+      <OnboardingPage
+        t={t}
+        ledger={ledger}
+        onCreateLedger={createLedger}
+        onJoinLedger={joinLedger}
+      />
+    );
+  }
+
+  // --- Main app (both users paired) ---
 
   if (loading) {
     return (
@@ -232,6 +280,10 @@ export default function Home() {
           friendName={settings.friendName}
           t={t}
           onSave={updateFriendName}
+          onLogout={signOut}
+          inviteCode={ledger.inviteCode}
+          partnerJoined={!!ledger.user2Id}
+          userEmail={user.email}
         />
 
         <HistorySheet

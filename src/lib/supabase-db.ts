@@ -14,6 +14,8 @@ interface EntryRow {
   created_at: number;
   updated_at: number | null;
   deleted_at: number | null;
+  created_by: string | null;
+  ledger_id: string | null;
 }
 
 interface AuditRow {
@@ -22,6 +24,7 @@ interface AuditRow {
   action: string;
   changes: unknown;
   created_at: number;
+  user_id: string | null;
 }
 
 function rowToEntry(row: EntryRow): LendLogEntry {
@@ -36,6 +39,8 @@ function rowToEntry(row: EntryRow): LendLogEntry {
     createdAt: row.created_at,
     updatedAt: row.updated_at ?? undefined,
     deletedAt: row.deleted_at ?? undefined,
+    createdBy: row.created_by ?? undefined,
+    ledgerId: row.ledger_id ?? undefined,
   };
 }
 
@@ -51,6 +56,8 @@ function entryToRow(entry: LendLogEntry): EntryRow {
     created_at: entry.createdAt,
     updated_at: entry.updatedAt ?? null,
     deleted_at: entry.deletedAt ?? null,
+    created_by: entry.createdBy ?? null,
+    ledger_id: entry.ledgerId ?? null,
   };
 }
 
@@ -61,6 +68,7 @@ function rowToAudit(row: AuditRow & { entries?: EntryRow }): AuditLogEntry {
     action: row.action as AuditAction,
     changes: row.changes as AuditLogEntry["changes"],
     createdAt: row.created_at,
+    userId: row.user_id ?? undefined,
     entry: row.entries ? rowToEntry(row.entries as unknown as EntryRow) : undefined,
   };
 }
@@ -100,14 +108,18 @@ export async function getEntryById(id: string): Promise<LendLogEntry | null> {
   return rowToEntry(data as EntryRow);
 }
 
-export async function createEntry(input: {
-  type: EntryType;
-  amount: number;
-  currency: Currency;
-  note?: string;
-  imageUrl?: string;
-  timestamp?: number;
-}): Promise<LendLogEntry> {
+export async function createEntry(
+  input: {
+    type: EntryType;
+    amount: number;
+    currency: Currency;
+    note?: string;
+    imageUrl?: string;
+    timestamp?: number;
+  },
+  userId: string,
+  ledgerId: string
+): Promise<LendLogEntry> {
   const entry: LendLogEntry = {
     id: crypto.randomUUID(),
     type: input.type,
@@ -117,19 +129,22 @@ export async function createEntry(input: {
     imageUrl: input.imageUrl,
     timestamp: input.timestamp ?? Date.now(),
     createdAt: Date.now(),
+    createdBy: userId,
+    ledgerId,
   };
 
   const { error } = await supabase.from("entries").insert(entryToRow(entry));
   if (error) throw error;
 
-  await createAuditLog(entry.id, "created", null);
+  await createAuditLog(entry.id, "created", null, userId);
   return entry;
 }
 
 export async function updateEntry(
   id: string,
   updates: Partial<Pick<LendLogEntry, "type" | "amount" | "currency" | "note" | "imageUrl" | "timestamp">>,
-  oldEntry: LendLogEntry
+  oldEntry: LendLogEntry,
+  userId: string
 ): Promise<LendLogEntry> {
   const changes: Record<string, { from: unknown; to: unknown }> = {};
   for (const key of Object.keys(updates) as (keyof typeof updates)[]) {
@@ -151,13 +166,13 @@ export async function updateEntry(
   if (error) throw error;
 
   if (Object.keys(changes).length > 0) {
-    await createAuditLog(id, "updated", changes);
+    await createAuditLog(id, "updated", changes, userId);
   }
 
   return updated;
 }
 
-export async function softDeleteEntry(id: string): Promise<void> {
+export async function softDeleteEntry(id: string, userId: string): Promise<void> {
   const entry = await getEntryById(id);
   if (!entry) return;
 
@@ -169,10 +184,10 @@ export async function softDeleteEntry(id: string): Promise<void> {
 
   if (error) throw error;
 
-  await createAuditLog(id, "deleted", { snapshot: entry } as unknown as Record<string, { from: unknown; to: unknown }>);
+  await createAuditLog(id, "deleted", { snapshot: entry } as unknown as Record<string, { from: unknown; to: unknown }>, userId);
 }
 
-export async function restoreEntry(id: string): Promise<void> {
+export async function restoreEntry(id: string, userId: string): Promise<void> {
   const now = Date.now();
   const { error } = await supabase
     .from("entries")
@@ -181,7 +196,7 @@ export async function restoreEntry(id: string): Promise<void> {
 
   if (error) throw error;
 
-  await createAuditLog(id, "restored", null);
+  await createAuditLog(id, "restored", null, userId);
 }
 
 // --- Image operations ---
@@ -208,24 +223,24 @@ export async function deleteImage(url: string): Promise<void> {
   await supabase.storage.from("images").remove([path]);
 }
 
-// --- Settings operations ---
+// --- Settings operations (per-user) ---
 
-export async function getSettings(): Promise<AppSettings> {
+export async function getSettings(userId: string): Promise<AppSettings> {
   const { data, error } = await supabase
     .from("settings")
     .select("*")
-    .eq("id", "default")
+    .eq("user_id", userId)
     .single();
 
   if (error || !data) return { friendName: "Friend" };
   return { friendName: data.friend_name };
 }
 
-export async function saveSettings(settings: AppSettings): Promise<void> {
+export async function saveSettings(settings: AppSettings, userId: string): Promise<void> {
   const { error } = await supabase
     .from("settings")
     .upsert({
-      id: "default",
+      user_id: userId,
       friend_name: settings.friendName,
       updated_at: Date.now(),
     });
@@ -238,7 +253,8 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
 async function createAuditLog(
   entryId: string,
   action: AuditAction,
-  changes: Record<string, { from: unknown; to: unknown }> | null
+  changes: Record<string, { from: unknown; to: unknown }> | null,
+  userId: string
 ): Promise<void> {
   await supabase.from("audit_log").insert({
     id: crypto.randomUUID(),
@@ -246,6 +262,7 @@ async function createAuditLog(
     action,
     changes,
     created_at: Date.now(),
+    user_id: userId,
   });
 }
 
@@ -263,19 +280,31 @@ export async function getAuditLog(limit = 50, offset = 0): Promise<AuditLogEntry
 
 // --- Bulk insert for migration ---
 
-export async function bulkInsertEntries(entries: LendLogEntry[]): Promise<void> {
+export async function bulkInsertEntries(
+  entries: LendLogEntry[],
+  userId: string,
+  ledgerId: string
+): Promise<void> {
   if (entries.length === 0) return;
 
-  const rows = entries.map(entryToRow);
+  // Stamp each entry with the user and ledger
+  const stamped = entries.map((e) => ({
+    ...e,
+    createdBy: e.createdBy ?? userId,
+    ledgerId: e.ledgerId ?? ledgerId,
+  }));
+
+  const rows = stamped.map(entryToRow);
   const { error } = await supabase.from("entries").upsert(rows, { onConflict: "id" });
   if (error) throw error;
 
-  const auditRows = entries.map((e) => ({
+  const auditRows = stamped.map((e) => ({
     id: crypto.randomUUID(),
     entry_id: e.id,
     action: "created" as const,
     changes: null,
     created_at: e.createdAt,
+    user_id: userId,
   }));
 
   await supabase.from("audit_log").insert(auditRows);

@@ -55,7 +55,9 @@ async function uploadBase64Image(
 }
 
 export async function migrateToSupabase(
-  onProgress: (current: number, total: number) => void
+  onProgress: (current: number, total: number) => void,
+  userId?: string,
+  ledgerId?: string
 ): Promise<void> {
   const entries = await getAllEntries();
   const total = entries.length;
@@ -99,7 +101,7 @@ export async function migrateToSupabase(
     onProgress(i + 1, total);
   }
 
-  await bulkInsertEntries(migratedEntries);
+  await bulkInsertEntries(migratedEntries, userId ?? "", ledgerId ?? "");
   localStorage.setItem(MIGRATION_FLAG, "true");
 }
 
