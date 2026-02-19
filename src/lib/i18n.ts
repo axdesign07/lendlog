@@ -124,6 +124,8 @@ const translations = {
     addTransaction: "New transaction",
     friends: "Friends",
     switchFriend: "Switch friend",
+    dashboard: "Dashboard",
+    back: "Back",
   },
   fr: {
     appName: "LendLog",
@@ -220,6 +222,8 @@ const translations = {
     addTransaction: "Nouvelle transaction",
     friends: "Amis",
     switchFriend: "Changer d'ami",
+    dashboard: "Tableau de bord",
+    back: "Retour",
   },
   ar: {
     appName: "LendLog",
@@ -316,6 +320,8 @@ const translations = {
     addTransaction: "\u0645\u0639\u0627\u0645\u0644\u0629 \u062C\u062F\u064A\u062F\u0629",
     friends: "\u0627\u0644\u0623\u0635\u062F\u0642\u0627\u0621",
     switchFriend: "\u062A\u063A\u064A\u064A\u0631 \u0627\u0644\u0635\u062F\u064A\u0642",
+    dashboard: "\u0644\u0648\u062D\u0629 \u0627\u0644\u0645\u0639\u0644\u0648\u0645\u0627\u062A",
+    back: "\u0631\u062C\u0648\u0639",
   },
   darija: {
     appName: "LendLog",
@@ -412,6 +418,8 @@ const translations = {
     addTransaction: "\u0645\u0639\u0627\u0645\u0644\u0629 \u062C\u062F\u064A\u062F\u0629",
     friends: "\u0627\u0644\u0635\u062D\u0627\u0628",
     switchFriend: "\u0628\u062F\u0644 \u0627\u0644\u0635\u0627\u062D\u0628",
+    dashboard: "\u0627\u0644\u062F\u0627\u0634\u0628\u0648\u0631\u062F",
+    back: "\u0631\u062C\u0639",
   },
 };
 

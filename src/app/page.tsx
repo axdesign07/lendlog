@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { Plus, Settings, Sun, Moon, Globe, Check, Clock, Download, Receipt, UserPlus } from "lucide-react";
+import { Plus, Settings, Sun, Moon, Globe, Check, Clock, Download, Receipt, UserPlus, ArrowLeft } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { useLocale } from "@/hooks/use-locale";
 import { useAuth } from "@/hooks/use-auth";
@@ -27,14 +27,13 @@ import { ExportSheet } from "@/components/lendlog/export-sheet";
 import { MigrationDialog } from "@/components/lendlog/migration-dialog";
 import { LoginPage } from "@/components/lendlog/login-page";
 import { OnboardingPage } from "@/components/lendlog/onboarding-page";
-import { TabBar, type TabType } from "@/components/lendlog/tab-bar";
-import { LedgerSelector } from "@/components/lendlog/ledger-selector";
 import { PortfolioView } from "@/components/lendlog/portfolio-view";
 import { checkMigrationNeeded, migrateToSupabase, skipMigration } from "@/lib/migrate";
 import { LOCALES } from "@/lib/i18n";
 import type { LendLogEntry, Currency, EntryType } from "@/types";
 
 type TypeFilter = EntryType | "all";
+type View = "dashboard" | "friend";
 
 export default function Home() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -57,7 +56,7 @@ export default function Home() {
   const { settings, updateFriendName } = useSettings(userId, ledgerId);
   const { friendBalances, totalByCurrency, loading: portfolioLoading } = usePortfolio(userId, ledgers);
 
-  // Friend names map for ledger selector
+  // Friend names map
   const [friendNames, setFriendNames] = useState<Map<string, string>>(new Map());
 
   useEffect(() => {
@@ -71,7 +70,7 @@ export default function Home() {
     });
   }, [userId, settings]); // Reload when settings change
 
-  const [activeTab, setActiveTab] = useState<TabType>("ledger");
+  const [view, setView] = useState<View>("dashboard");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -139,19 +138,24 @@ export default function Home() {
     }
   };
 
-  const handleSelectFriendFromPortfolio = (id: string) => {
+  const handleSelectFriend = (id: string) => {
     selectLedger(id);
-    setActiveTab("ledger");
+    setView("friend");
+    // Reset filters when switching friends
+    setTypeFilter("all");
+    setCurrencyFilter("all");
   };
 
-  const handleCreateNewFromSelector = async () => {
+  const handleBack = () => {
+    setView("dashboard");
+  };
+
+  const handleCreateNew = async () => {
     await createLedger();
-    // After creating, user will be switched to the new ledger
-    // They should go to settings to name their friend
     setSettingsOpen(true);
   };
 
-  const handleJoinFromSelector = () => {
+  const handleJoinNew = () => {
     setJoinDialogOpen(true);
   };
 
@@ -189,7 +193,7 @@ export default function Home() {
     );
   }
 
-  // Join dialog (when user clicks "Join" from ledger selector)
+  // Join dialog
   if (joinDialogOpen) {
     return (
       <OnboardingPage
@@ -209,15 +213,86 @@ export default function Home() {
     );
   }
 
-  // --- Main app ---
+  // --- Shared header right-side buttons ---
+  const headerRight = (
+    <div className="flex items-center gap-1">
+      {/* Language */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 gap-1.5 px-2.5 text-xs font-medium"
+          >
+            <Globe className="h-[15px] w-[15px]" />
+            {LOCALES.find((l) => l.value === locale)?.label}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {LOCALES.map((l) => (
+            <DropdownMenuItem
+              key={l.value}
+              onClick={() => setLocale(l.value)}
+              className="gap-2"
+            >
+              {l.label}
+              {locale === l.value && <Check className="h-4 w-4 ms-auto" />}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-  if (loading && activeTab === "ledger") {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-pulse text-muted-foreground text-sm">{t.loading}</div>
-      </div>
-    );
-  }
+      {/* History + Export — only in friend view */}
+      {view === "friend" && (
+        <>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9"
+            onClick={() => setHistoryOpen(true)}
+          >
+            <Clock className="h-[18px] w-[18px]" />
+            <span className="sr-only">{t.history}</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9"
+            onClick={() => setExportOpen(true)}
+          >
+            <Download className="h-[18px] w-[18px]" />
+            <span className="sr-only">{t.export}</span>
+          </Button>
+        </>
+      )}
+
+      {/* Theme */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-9 w-9"
+        onClick={toggleTheme}
+      >
+        {theme === "light" ? (
+          <Moon className="h-[18px] w-[18px]" />
+        ) : (
+          <Sun className="h-[18px] w-[18px]" />
+        )}
+        <span className="sr-only">{t.toggleTheme}</span>
+      </Button>
+
+      {/* Settings */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-9 w-9"
+        onClick={() => setSettingsOpen(true)}
+      >
+        <Settings className="h-[18px] w-[18px]" />
+        <span className="sr-only">{t.settings}</span>
+      </Button>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -225,140 +300,53 @@ export default function Home() {
         {/* Header */}
         <header className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
           <div className="flex items-center justify-between px-4 h-14">
-            {activeTab === "ledger" ? (
+            {view === "dashboard" ? (
+              <h1 className="text-xl font-bold tracking-tight">{t.appName}</h1>
+            ) : (
               <div className="flex items-center gap-1">
-                <LedgerSelector
-                  ledgers={ledgers}
-                  selectedLedgerId={selectedLedgerId}
-                  friendNames={friendNames}
-                  t={t}
-                  onSelect={selectLedger}
-                />
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
-                  onClick={handleCreateNewFromSelector}
+                  className="h-9 w-9"
+                  onClick={handleBack}
                 >
-                  <UserPlus className="h-4 w-4" />
-                  <span className="sr-only">{t.addFriend}</span>
+                  <ArrowLeft className="h-5 w-5" />
+                  <span className="sr-only">{t.back}</span>
                 </Button>
+                <h1 className="text-lg font-bold tracking-tight">
+                  {settings.friendName}
+                </h1>
               </div>
-            ) : (
-              <h1 className="text-xl font-bold tracking-tight">{t.portfolio}</h1>
             )}
-            <div className="flex items-center gap-1">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-9 gap-1.5 px-2.5 text-xs font-medium"
-                  >
-                    <Globe className="h-[15px] w-[15px]" />
-                    {LOCALES.find((l) => l.value === locale)?.label}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {LOCALES.map((l) => (
-                    <DropdownMenuItem
-                      key={l.value}
-                      onClick={() => setLocale(l.value)}
-                      className="gap-2"
-                    >
-                      {l.label}
-                      {locale === l.value && <Check className="h-4 w-4 ms-auto" />}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              {activeTab === "ledger" && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9"
-                    onClick={() => setHistoryOpen(true)}
-                  >
-                    <Clock className="h-[18px] w-[18px]" />
-                    <span className="sr-only">{t.history}</span>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9"
-                    onClick={() => setExportOpen(true)}
-                  >
-                    <Download className="h-[18px] w-[18px]" />
-                    <span className="sr-only">{t.export}</span>
-                  </Button>
-                </>
-              )}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9"
-                onClick={toggleTheme}
-              >
-                {theme === "light" ? (
-                  <Moon className="h-[18px] w-[18px]" />
-                ) : (
-                  <Sun className="h-[18px] w-[18px]" />
-                )}
-                <span className="sr-only">{t.toggleTheme}</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9"
-                onClick={() => setSettingsOpen(true)}
-              >
-                <Settings className="h-[18px] w-[18px]" />
-                <span className="sr-only">{t.settings}</span>
-              </Button>
-            </div>
+            {headerRight}
           </div>
         </header>
 
-        {/* Tab Content */}
-        {activeTab === "ledger" ? (
+        {/* Content */}
+        {view === "dashboard" ? (
           <>
-            {/* Balance Summary */}
-            <BalanceSummary entries={entries} friendName={settings.friendName} t={t} />
-
-            {/* Filter Bar */}
-            {entries.length > 0 && (
-              <FilterBar
-                typeFilter={typeFilter}
-                currencyFilter={currencyFilter}
-                t={t}
-                onTypeFilterChange={setTypeFilter}
-                onCurrencyFilterChange={setCurrencyFilter}
-              />
-            )}
-
-            {/* Entry List */}
-            <div className="px-4 pb-32">
-              <EntryList
-                entries={filteredEntries}
-                friendName={settings.friendName}
-                t={t}
-                locale={locale}
-                onEdit={handleEdit}
-                onDelete={removeEntry}
-                onApprove={approveEntry}
-                onReject={rejectEntry}
-                onResend={resendEntry}
-                currentUserId={userId}
-              />
+            {/* Dashboard: Portfolio overview */}
+            <div className="pb-24">
+              {portfolioLoading ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="animate-pulse text-muted-foreground text-sm">{t.loading}</div>
+                </div>
+              ) : (
+                <PortfolioView
+                  friendBalances={friendBalances}
+                  totalByCurrency={totalByCurrency}
+                  t={t}
+                  onSelectFriend={handleSelectFriend}
+                />
+              )}
             </div>
 
-            {/* FAB */}
+            {/* Dashboard FAB — New transaction / Add friend */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   size="icon"
-                  className="fixed bottom-16 right-6 rtl:right-auto rtl:left-6 h-14 w-14 rounded-full shadow-lg z-30"
+                  className="fixed bottom-6 right-6 rtl:right-auto rtl:left-6 h-14 w-14 rounded-full shadow-lg z-30"
                 >
                   <Plus className="h-6 w-6" />
                   <span className="sr-only">{t.addEntryButton}</span>
@@ -369,7 +357,7 @@ export default function Home() {
                   <Receipt className="h-5 w-5" />
                   {t.addTransaction}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleCreateNewFromSelector} className="gap-3 py-3">
+                <DropdownMenuItem onClick={handleCreateNew} className="gap-3 py-3">
                   <UserPlus className="h-5 w-5" />
                   {t.addFriend}
                 </DropdownMenuItem>
@@ -377,25 +365,54 @@ export default function Home() {
             </DropdownMenu>
           </>
         ) : (
-          /* Portfolio Tab */
-          <div className="pb-32">
-            {portfolioLoading ? (
+          <>
+            {/* Friend view: Balance + Entries */}
+            {loading ? (
               <div className="flex items-center justify-center py-20">
                 <div className="animate-pulse text-muted-foreground text-sm">{t.loading}</div>
               </div>
             ) : (
-              <PortfolioView
-                friendBalances={friendBalances}
-                totalByCurrency={totalByCurrency}
-                t={t}
-                onSelectFriend={handleSelectFriendFromPortfolio}
-              />
-            )}
-          </div>
-        )}
+              <>
+                <BalanceSummary entries={entries} friendName={settings.friendName} t={t} />
 
-        {/* Bottom Tab Bar */}
-        <TabBar activeTab={activeTab} onTabChange={setActiveTab} t={t} />
+                {entries.length > 0 && (
+                  <FilterBar
+                    typeFilter={typeFilter}
+                    currencyFilter={currencyFilter}
+                    t={t}
+                    onTypeFilterChange={setTypeFilter}
+                    onCurrencyFilterChange={setCurrencyFilter}
+                  />
+                )}
+
+                <div className="px-4 pb-24">
+                  <EntryList
+                    entries={filteredEntries}
+                    friendName={settings.friendName}
+                    t={t}
+                    locale={locale}
+                    onEdit={handleEdit}
+                    onDelete={removeEntry}
+                    onApprove={approveEntry}
+                    onReject={rejectEntry}
+                    onResend={resendEntry}
+                    currentUserId={userId}
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Friend view FAB — direct add entry */}
+            <Button
+              size="icon"
+              className="fixed bottom-6 right-6 rtl:right-auto rtl:left-6 h-14 w-14 rounded-full shadow-lg z-30"
+              onClick={handleAdd}
+            >
+              <Plus className="h-6 w-6" />
+              <span className="sr-only">{t.addEntryButton}</span>
+            </Button>
+          </>
+        )}
 
         {/* Sheets & Dialogs */}
         <AddEntrySheet
@@ -421,8 +438,8 @@ export default function Home() {
           inviteCode={selectedLedger?.inviteCode}
           partnerJoined={!!selectedLedger?.user2Id}
           userEmail={user.email}
-          onAddFriend={handleCreateNewFromSelector}
-          onJoinLedger={handleJoinFromSelector}
+          onAddFriend={handleCreateNew}
+          onJoinLedger={handleJoinNew}
         />
 
         <HistorySheet
