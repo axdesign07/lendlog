@@ -2,9 +2,10 @@
 
 import { useMemo, useEffect, useState } from "react";
 import { Check } from "lucide-react";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
 import { calculateNetBalances } from "@/lib/balance";
-import type { LendLogEntry, NetBalance } from "@/types";
+import { getExchangeRates, convertBalances, type ExchangeRates } from "@/lib/exchange-rates";
+import type { LendLogEntry, NetBalance, Currency } from "@/types";
 import type { Translations } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +13,7 @@ interface BalanceSummaryProps {
   entries: LendLogEntry[];
   friendName: string;
   t: Translations;
+  preferredCurrency?: Currency;
 }
 
 type BalanceState = "positive" | "negative" | "settled";
@@ -65,9 +67,17 @@ export function BalanceSummary({
   entries,
   friendName,
   t,
+  preferredCurrency,
 }: BalanceSummaryProps) {
   const balances = useMemo(() => calculateNetBalances(entries), [entries]);
   const isDark = useIsDark();
+  const [rates, setRates] = useState<ExchangeRates | null>(null);
+
+  useEffect(() => {
+    if (preferredCurrency) {
+      getExchangeRates().then(setRates);
+    }
+  }, [preferredCurrency]);
 
   const sortedBalances = useMemo(
     () =>
@@ -84,6 +94,13 @@ export function BalanceSummary({
 
   const primary = sortedBalances[0] ?? null;
   const secondary = sortedBalances.slice(1);
+
+  // Compute converted total when multi-currency + preferred set
+  const hasMultipleCurrencies = balances.length > 1;
+  const convertedTotal =
+    preferredCurrency && rates && hasMultipleCurrencies
+      ? convertBalances(balances, preferredCurrency, rates)
+      : null;
 
   return (
     <div className="px-4 py-3">
@@ -110,18 +127,35 @@ export function BalanceSummary({
         {/* Has balances */}
         {primary && (
           <div className="flex flex-col gap-4">
+            {/* Converted total (if multi-currency + preferred set) */}
+            {convertedTotal !== null && preferredCurrency && (
+              <div className="flex flex-col">
+                <p dir="ltr" className="text-3xl font-bold tracking-tight text-white">
+                  {convertedTotal > 0 ? "+" : "\u2212"}
+                  {getCurrencySymbol(preferredCurrency)}
+                  {Math.abs(convertedTotal).toFixed(2)}
+                </p>
+                <p
+                  className="mt-1 text-xs font-medium"
+                  style={{ color: "rgba(255,255,255,0.5)" }}
+                >
+                  {t.approximateTotal}
+                </p>
+              </div>
+            )}
+
             {/* Primary balance */}
             <div
               className={cn(
                 "flex flex-col",
-                secondary.length === 0 && "items-center py-2"
+                secondary.length === 0 && convertedTotal === null && "items-center py-2"
               )}
             >
               <p
                 dir="ltr"
                 className={cn(
                   "font-bold tracking-tight text-white",
-                  secondary.length === 0 ? "text-4xl" : "text-3xl"
+                  convertedTotal !== null ? "text-xl" : secondary.length === 0 ? "text-4xl" : "text-3xl"
                 )}
               >
                 {primary.amount > 0 ? "+" : "\u2212"}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import { softDeleteLedger as dbSoftDeleteLedger, restoreLedgerDb } from "@/lib/supabase-db";
 
 export interface Ledger {
   id: string;
@@ -28,6 +29,7 @@ export function useLedger(userId: string | null) {
         .from("ledgers")
         .select("*")
         .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
+        .is("deleted_at", null)
         .order("created_at", { ascending: true });
 
       if (data && data.length > 0) {
@@ -39,7 +41,6 @@ export function useLedger(userId: string | null) {
         }));
         setLedgers(mapped);
 
-        // Restore selected ledger from localStorage, or pick the first one
         const stored = localStorage.getItem(SELECTED_LEDGER_KEY);
         const valid = mapped.find((l) => l.id === stored);
         if (valid) {
@@ -53,7 +54,7 @@ export function useLedger(userId: string | null) {
         setSelectedLedgerId(null);
       }
     } catch {
-      // No ledgers found — that's fine
+      // No ledgers found
     } finally {
       setLoading(false);
     }
@@ -62,7 +63,6 @@ export function useLedger(userId: string | null) {
   useEffect(() => {
     loadLedgers();
 
-    // Listen for ledger changes (partner joining, new ledgers)
     const channel = supabase
       .channel("ledgers-realtime")
       .on(
@@ -135,10 +135,40 @@ export function useLedger(userId: string | null) {
     [userId]
   );
 
-  // Selected ledger object
+  const deleteLedger = useCallback(
+    async (ledgerId: string) => {
+      await dbSoftDeleteLedger(ledgerId);
+
+      setLedgers((prev) => {
+        const remaining = prev.filter((l) => l.id !== ledgerId);
+
+        // If deleted was selected, switch to another
+        if (selectedLedgerId === ledgerId) {
+          if (remaining.length > 0) {
+            setSelectedLedgerId(remaining[0].id);
+            localStorage.setItem(SELECTED_LEDGER_KEY, remaining[0].id);
+          } else {
+            setSelectedLedgerId(null);
+            localStorage.removeItem(SELECTED_LEDGER_KEY);
+          }
+        }
+
+        return remaining;
+      });
+    },
+    [selectedLedgerId]
+  );
+
+  const restoreLedger = useCallback(
+    async (ledgerId: string) => {
+      await restoreLedgerDb(ledgerId);
+      await loadLedgers();
+    },
+    [loadLedgers]
+  );
+
   const selectedLedger = ledgers.find((l) => l.id === selectedLedgerId) ?? null;
 
-  // Who is the other user in the selected ledger?
   const partnerId = selectedLedger
     ? selectedLedger.user1Id === userId
       ? selectedLedger.user2Id
@@ -153,6 +183,8 @@ export function useLedger(userId: string | null) {
     loading,
     createLedger,
     joinLedger,
+    deleteLedger,
+    restoreLedger,
     partnerId,
     refresh: loadLedgers,
   };

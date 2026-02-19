@@ -3,15 +3,17 @@
 import { ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
 import type { FriendBalance } from "@/hooks/use-portfolio";
-import type { NetBalance } from "@/types";
+import type { NetBalance, Currency } from "@/types";
 import type { Translations } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 interface PortfolioViewProps {
   friendBalances: FriendBalance[];
   totalByCurrency: NetBalance[];
+  convertedTotal: number | null;
+  preferredCurrency?: Currency;
   t: Translations;
   onSelectFriend: (ledgerId: string) => void;
 }
@@ -19,10 +21,13 @@ interface PortfolioViewProps {
 export function PortfolioView({
   friendBalances,
   totalByCurrency,
+  convertedTotal,
+  preferredCurrency,
   t,
   onSelectFriend,
 }: PortfolioViewProps) {
   const hasBalances = totalByCurrency.length > 0;
+  const showConverted = convertedTotal !== null && preferredCurrency;
 
   return (
     <div className="px-4 pb-24 space-y-6">
@@ -35,18 +40,36 @@ export function PortfolioView({
       >
         <p className="text-sm font-medium opacity-80">{t.totalNetWorth}</p>
         {hasBalances ? (
-          <div className="mt-2 space-y-1">
-            {totalByCurrency.map(({ currency, amount }) => (
-              <div key={currency} className="flex items-baseline gap-2">
-                <span dir="ltr" className="text-2xl font-bold tracking-tight">
-                  {amount > 0 ? "+" : ""}
-                  {formatCurrency(Math.abs(amount), currency)}
+          <div className="mt-2 space-y-2">
+            {/* Converted total (if preferred currency set) */}
+            {showConverted && (
+              <div>
+                <span dir="ltr" className="text-3xl font-bold tracking-tight">
+                  {convertedTotal > 0 ? "+" : convertedTotal < 0 ? "\u2212" : ""}
+                  {getCurrencySymbol(preferredCurrency)}
+                  {Math.abs(convertedTotal).toFixed(2)}
                 </span>
-                <span className="text-xs opacity-70">
-                  {amount > 0 ? t.owesYou("") : amount < 0 ? t.youOwe("") : ""}
-                </span>
+                <p className="text-xs opacity-60 mt-0.5">{t.approximateTotal}</p>
               </div>
-            ))}
+            )}
+
+            {/* Per-currency breakdown */}
+            <div className={cn("space-y-1", showConverted && "opacity-70 pt-1 border-t border-white/20")}>
+              {!showConverted && null}
+              {totalByCurrency.map(({ currency, amount }) => (
+                <div key={currency} className="flex items-baseline gap-2">
+                  <span dir="ltr" className={cn("font-bold tracking-tight", showConverted ? "text-base" : "text-2xl")}>
+                    {amount > 0 ? "+" : ""}
+                    {formatCurrency(Math.abs(amount), currency)}
+                  </span>
+                  {!showConverted && (
+                    <span className="text-xs opacity-70">
+                      {amount > 0 ? t.owesYou("") : amount < 0 ? t.youOwe("") : ""}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         ) : (
           <p className="mt-2 text-lg font-semibold opacity-90">{t.allSettled}</p>
@@ -63,6 +86,7 @@ export function PortfolioView({
             <FriendCard
               key={friend.ledgerId}
               friend={friend}
+              preferredCurrency={preferredCurrency}
               t={t}
               onSelect={() => onSelectFriend(friend.ledgerId)}
             />
@@ -75,14 +99,17 @@ export function PortfolioView({
 
 function FriendCard({
   friend,
+  preferredCurrency,
   t,
   onSelect,
 }: {
   friend: FriendBalance;
+  preferredCurrency?: Currency;
   t: Translations;
   onSelect: () => void;
 }) {
   const hasBalance = friend.balances.length > 0;
+  const showConverted = friend.convertedTotal !== undefined && preferredCurrency;
 
   return (
     <Card
@@ -100,22 +127,41 @@ function FriendCard({
             )}
           </div>
           {hasBalance ? (
-            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
-              {friend.balances.map(({ currency, amount }) => (
-                <span
-                  key={currency}
+            <div className="mt-1">
+              {/* Converted total for this friend */}
+              {showConverted && (
+                <p
                   dir="ltr"
                   className={cn(
-                    "text-sm font-medium",
-                    amount > 0
+                    "text-sm font-semibold",
+                    friend.convertedTotal! > 0
                       ? "text-emerald-600 dark:text-emerald-400"
                       : "text-red-500 dark:text-red-400"
                   )}
                 >
-                  {amount > 0 ? "+" : ""}
-                  {formatCurrency(Math.abs(amount), currency)}
-                </span>
-              ))}
+                  {friend.convertedTotal! > 0 ? "+" : ""}
+                  {formatCurrency(Math.abs(friend.convertedTotal!), preferredCurrency)}
+                </p>
+              )}
+              {/* Per-currency breakdown */}
+              <div className={cn("flex flex-wrap gap-x-3 gap-y-0.5", showConverted && "opacity-60")}>
+                {friend.balances.map(({ currency, amount }) => (
+                  <span
+                    key={currency}
+                    dir="ltr"
+                    className={cn(
+                      "text-sm font-medium",
+                      !showConverted && (amount > 0
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-red-500 dark:text-red-400"),
+                      showConverted && "text-muted-foreground text-xs"
+                    )}
+                  >
+                    {amount > 0 ? "+" : ""}
+                    {formatCurrency(Math.abs(amount), currency)}
+                  </span>
+                ))}
+              </div>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground mt-0.5">{t.allSettled}</p>

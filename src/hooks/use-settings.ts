@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getSettings, saveSettings } from "@/lib/supabase-db";
 import { supabase } from "@/lib/supabase";
-import type { AppSettings } from "@/types";
+import type { AppSettings, Currency } from "@/types";
 
 export function useSettings(userId: string | null, ledgerId?: string | null) {
   const [settings, setSettings] = useState<AppSettings>({ friendName: "Friend" });
@@ -44,12 +44,22 @@ export function useSettings(userId: string | null, ledgerId?: string | null) {
   const updateFriendName = useCallback(
     async (name: string) => {
       if (!userId) return;
-      const updated = { friendName: name.trim() || "Friend" };
+      const updated = { ...settings, friendName: name.trim() || "Friend" };
       await saveSettings(updated, userId, ledgerId ?? undefined);
       setSettings(updated);
     },
-    [userId, ledgerId]
+    [userId, ledgerId, settings]
   );
 
-  return { settings, loading, updateFriendName };
+  const updatePreferredCurrency = useCallback(
+    async (currency: Currency | undefined) => {
+      if (!userId) return;
+      const updated = { ...settings, preferredCurrency: currency };
+      await saveSettings(updated, userId, ledgerId ?? undefined);
+      setSettings(updated);
+    },
+    [userId, ledgerId, settings]
+  );
+
+  return { settings, loading, updateFriendName, updatePreferredCurrency };
 }

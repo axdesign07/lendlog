@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { getAllActiveEntries, getAllSettings } from "@/lib/supabase-db";
 import { supabase } from "@/lib/supabase";
 import { calculateNetBalances } from "@/lib/balance";
-import type { LendLogEntry, NetBalance } from "@/types";
+import { getExchangeRates, convertBalances, type ExchangeRates } from "@/lib/exchange-rates";
+import type { LendLogEntry, NetBalance, Currency } from "@/types";
 import type { Ledger } from "./use-ledger";
 
 export interface FriendBalance {
@@ -12,12 +13,24 @@ export interface FriendBalance {
   friendName: string;
   balances: NetBalance[];
   hasPartner: boolean;
+  convertedTotal?: number;
 }
 
-export function usePortfolio(userId: string | null, ledgers: Ledger[]) {
+export function usePortfolio(
+  userId: string | null,
+  ledgers: Ledger[],
+  preferredCurrency?: Currency
+) {
   const [friendBalances, setFriendBalances] = useState<FriendBalance[]>([]);
   const [totalByCurrency, setTotalByCurrency] = useState<NetBalance[]>([]);
+  const [convertedTotal, setConvertedTotal] = useState<number | null>(null);
+  const [rates, setRates] = useState<ExchangeRates | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Load exchange rates on mount
+  useEffect(() => {
+    getExchangeRates().then(setRates);
+  }, []);
 
   const flipPerspective = useCallback(
     (entry: LendLogEntry): LendLogEntry => {
@@ -37,19 +50,16 @@ export function usePortfolio(userId: string | null, ledgers: Ledger[]) {
     }
 
     try {
-      // Load all entries and settings in parallel
       const [allEntries, allSettings] = await Promise.all([
         getAllActiveEntries(),
         getAllSettings(userId),
       ]);
 
-      // Build a map of ledger_id → friend_name
       const nameMap = new Map<string, string>();
       for (const s of allSettings) {
         nameMap.set(s.ledgerId, s.friendName);
       }
 
-      // Group entries by ledger
       const byLedger = new Map<string, LendLogEntry[]>();
       for (const entry of allEntries) {
         const lid = entry.ledgerId;
@@ -60,34 +70,46 @@ export function usePortfolio(userId: string | null, ledgers: Ledger[]) {
         byLedger.set(lid, arr);
       }
 
-      // Calculate per-friend balances
       const friends: FriendBalance[] = ledgers.map((ledger) => {
         const entries = byLedger.get(ledger.id) || [];
         const balances = calculateNetBalances(entries);
-        return {
+        const friendData: FriendBalance = {
           ledgerId: ledger.id,
           friendName: nameMap.get(ledger.id) || "Friend",
           balances,
           hasPartner: !!ledger.user2Id,
         };
+
+        // Convert per-friend total if we have rates + preferred currency
+        if (preferredCurrency && rates && balances.length > 0) {
+          friendData.convertedTotal = convertBalances(balances, preferredCurrency, rates);
+        }
+
+        return friendData;
       });
 
       setFriendBalances(friends);
 
-      // Calculate total across all friends
       const allFlipped = allEntries.map(flipPerspective);
-      setTotalByCurrency(calculateNetBalances(allFlipped));
+      const totals = calculateNetBalances(allFlipped);
+      setTotalByCurrency(totals);
+
+      // Convert grand total
+      if (preferredCurrency && rates && totals.length > 0) {
+        setConvertedTotal(convertBalances(totals, preferredCurrency, rates));
+      } else {
+        setConvertedTotal(null);
+      }
     } catch {
       // Failed to load portfolio
     } finally {
       setLoading(false);
     }
-  }, [userId, ledgers, flipPerspective]);
+  }, [userId, ledgers, flipPerspective, preferredCurrency, rates]);
 
   useEffect(() => {
     loadPortfolio();
 
-    // Listen for entry changes across all ledgers
     const channel = supabase
       .channel("portfolio-entries-realtime")
       .on(
@@ -104,5 +126,5 @@ export function usePortfolio(userId: string | null, ledgers: Ledger[]) {
     };
   }, [loadPortfolio]);
 
-  return { friendBalances, totalByCurrency, loading, refresh: loadPortfolio };
+  return { friendBalances, totalByCurrency, convertedTotal, loading, refresh: loadPortfolio };
 }

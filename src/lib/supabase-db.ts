@@ -297,34 +297,77 @@ export async function getSettings(userId: string, ledgerId?: string): Promise<Ap
     .single();
 
   if (error || !data) return { friendName: "Friend" };
-  return { friendName: data.friend_name };
+  return {
+    friendName: data.friend_name,
+    preferredCurrency: data.preferred_currency || undefined,
+  };
 }
 
 export async function saveSettings(settings: AppSettings, userId: string, ledgerId?: string): Promise<void> {
   if (!ledgerId) return;
 
-  const { error } = await supabase
-    .from("settings")
-    .upsert({
-      user_id: userId,
-      ledger_id: ledgerId,
-      friend_name: settings.friendName,
-      updated_at: Date.now(),
-    });
+  const row: Record<string, unknown> = {
+    user_id: userId,
+    ledger_id: ledgerId,
+    friend_name: settings.friendName,
+    updated_at: Date.now(),
+  };
+  if (settings.preferredCurrency !== undefined) {
+    row.preferred_currency = settings.preferredCurrency || null;
+  }
 
+  const { error } = await supabase.from("settings").upsert(row);
   if (error) throw error;
 }
 
-export async function getAllSettings(userId: string): Promise<{ ledgerId: string; friendName: string }[]> {
+export async function getAllSettings(userId: string): Promise<{ ledgerId: string; friendName: string; preferredCurrency?: string }[]> {
   const { data, error } = await supabase
     .from("settings")
     .select("*")
     .eq("user_id", userId);
 
   if (error || !data) return [];
-  return data.map((row: { ledger_id: string; friend_name: string }) => ({
+  return data.map((row: { ledger_id: string; friend_name: string; preferred_currency?: string }) => ({
     ledgerId: row.ledger_id,
     friendName: row.friend_name,
+    preferredCurrency: row.preferred_currency || undefined,
+  }));
+}
+
+// --- Ledger soft delete/restore ---
+
+export async function softDeleteLedger(ledgerId: string): Promise<void> {
+  const { error } = await supabase
+    .from("ledgers")
+    .update({ deleted_at: Date.now() })
+    .eq("id", ledgerId);
+
+  if (error) throw error;
+}
+
+export async function restoreLedgerDb(ledgerId: string): Promise<void> {
+  const { error } = await supabase
+    .from("ledgers")
+    .update({ deleted_at: null })
+    .eq("id", ledgerId);
+
+  if (error) throw error;
+}
+
+export async function getDeletedLedgers(userId: string): Promise<{ id: string; user1Id: string; user2Id: string | null; inviteCode: string }[]> {
+  const { data, error } = await supabase
+    .from("ledgers")
+    .select("*")
+    .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
+    .not("deleted_at", "is", null)
+    .order("deleted_at", { ascending: false });
+
+  if (error || !data) return [];
+  return data.map((row: { id: string; user1_id: string; user2_id: string | null; invite_code: string }) => ({
+    id: row.id,
+    user1Id: row.user1_id,
+    user2Id: row.user2_id,
+    inviteCode: row.invite_code,
   }));
 }
 

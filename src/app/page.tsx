@@ -49,12 +49,14 @@ export default function Home() {
     loading: ledgerLoading,
     createLedger,
     joinLedger,
+    deleteLedger,
   } = useLedger(userId);
   const ledgerId = selectedLedgerId;
 
   const { entries, loading, addEntry, updateEntry, removeEntry, restoreEntry, approveEntry, rejectEntry, resendEntry } = useEntries(userId, ledgerId);
-  const { settings, updateFriendName } = useSettings(userId, ledgerId);
-  const { friendBalances, totalByCurrency, loading: portfolioLoading } = usePortfolio(userId, ledgers);
+  const { settings, updateFriendName, updatePreferredCurrency } = useSettings(userId, ledgerId);
+  const preferredCurrency = settings.preferredCurrency;
+  const { friendBalances, totalByCurrency, convertedTotal, loading: portfolioLoading } = usePortfolio(userId, ledgers, preferredCurrency);
 
   // Friend names map
   const [friendNames, setFriendNames] = useState<Map<string, string>>(new Map());
@@ -147,6 +149,12 @@ export default function Home() {
   };
 
   const handleBack = () => {
+    setView("dashboard");
+  };
+
+  const handleDeleteFriend = async () => {
+    if (!selectedLedgerId) return;
+    await deleteLedger(selectedLedgerId);
     setView("dashboard");
   };
 
@@ -335,6 +343,8 @@ export default function Home() {
                 <PortfolioView
                   friendBalances={friendBalances}
                   totalByCurrency={totalByCurrency}
+                  convertedTotal={convertedTotal}
+                  preferredCurrency={preferredCurrency}
                   t={t}
                   onSelectFriend={handleSelectFriend}
                 />
@@ -373,7 +383,7 @@ export default function Home() {
               </div>
             ) : (
               <>
-                <BalanceSummary entries={entries} friendName={settings.friendName} t={t} />
+                <BalanceSummary entries={entries} friendName={settings.friendName} t={t} preferredCurrency={preferredCurrency} />
 
                 {entries.length > 0 && (
                   <FilterBar
@@ -440,6 +450,10 @@ export default function Home() {
           userEmail={user.email}
           onAddFriend={handleCreateNew}
           onJoinLedger={handleJoinNew}
+          preferredCurrency={preferredCurrency}
+          onPreferredCurrencyChange={updatePreferredCurrency}
+          onDeleteFriend={handleDeleteFriend}
+          showDeleteFriend={view === "friend"}
         />
 
         <HistorySheet
