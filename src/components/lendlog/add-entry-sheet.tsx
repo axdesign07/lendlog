@@ -39,7 +39,10 @@ interface AddEntrySheetProps {
     note?: string;
     image?: File;
     timestamp?: number;
+    ledgerId?: string;
   }) => void;
+  ledgers: { id: string; friendName: string }[];
+  currentLedgerId: string | null;
 }
 
 export function AddEntrySheet({
@@ -48,6 +51,8 @@ export function AddEntrySheet({
   editEntry,
   t,
   onSubmit,
+  ledgers,
+  currentLedgerId,
 }: AddEntrySheetProps) {
   const [type, setType] = useState<EntryType>("lent");
   const [amount, setAmount] = useState("");
@@ -55,6 +60,7 @@ export function AddEntrySheet({
   const [note, setNote] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedLedgerId, setSelectedLedgerId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const existingImageSrc = useImage(editEntry?.imageUrl);
 
@@ -75,8 +81,9 @@ export function AddEntrySheet({
         setImageFile(null);
         setImagePreview(null);
       }
+      setSelectedLedgerId(currentLedgerId);
     }
-  }, [open, editEntry]);
+  }, [open, editEntry, currentLedgerId]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -105,11 +112,13 @@ export function AddEntrySheet({
       note: note.trim() || undefined,
       image: imageFile || undefined,
       timestamp: editEntry?.timestamp,
+      ledgerId: selectedLedgerId || undefined,
     });
     onOpenChange(false);
   };
 
   const displayPreview = imagePreview || (editEntry && !imageFile ? existingImageSrc : null);
+  const showFriendPicker = !editEntry && ledgers.length > 1;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -119,6 +128,27 @@ export function AddEntrySheet({
         </SheetHeader>
 
         <div className="space-y-6 py-4">
+          {/* Friend picker */}
+          {showFriendPicker && (
+            <div className="space-y-2">
+              <Label>{t.friends}</Label>
+              <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                {ledgers.map((l) => (
+                  <Button
+                    key={l.id}
+                    type="button"
+                    variant={selectedLedgerId === l.id ? "default" : "outline"}
+                    size="sm"
+                    className="shrink-0 rounded-full px-4 h-9"
+                    onClick={() => setSelectedLedgerId(l.id)}
+                  >
+                    {l.friendName}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Type toggle */}
           <div className="flex gap-3">
             <Button

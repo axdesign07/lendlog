@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { Plus, Settings, Sun, Moon, Globe, Check, Clock, Download } from "lucide-react";
+import { Plus, Settings, Sun, Moon, Globe, Check, Clock, Download, Receipt, UserPlus } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { useLocale } from "@/hooks/use-locale";
 import { useAuth } from "@/hooks/use-auth";
@@ -129,6 +129,7 @@ export default function Home() {
     note?: string;
     image?: File;
     timestamp?: number;
+    ledgerId?: string;
   }) => {
     if (editEntry) {
       const resetStatus = editEntry.status === "rejected";
@@ -225,15 +226,24 @@ export default function Home() {
         <header className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
           <div className="flex items-center justify-between px-4 h-14">
             {activeTab === "ledger" ? (
-              <LedgerSelector
-                ledgers={ledgers}
-                selectedLedgerId={selectedLedgerId}
-                friendNames={friendNames}
-                t={t}
-                onSelect={selectLedger}
-                onCreateNew={handleCreateNewFromSelector}
-                onJoinNew={handleJoinFromSelector}
-              />
+              <div className="flex items-center gap-1">
+                <LedgerSelector
+                  ledgers={ledgers}
+                  selectedLedgerId={selectedLedgerId}
+                  friendNames={friendNames}
+                  t={t}
+                  onSelect={selectLedger}
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handleCreateNewFromSelector}
+                >
+                  <UserPlus className="h-4 w-4" />
+                  <span className="sr-only">{t.addFriend}</span>
+                </Button>
+              </div>
             ) : (
               <h1 className="text-xl font-bold tracking-tight">{t.portfolio}</h1>
             )}
@@ -344,14 +354,27 @@ export default function Home() {
             </div>
 
             {/* FAB */}
-            <Button
-              size="icon"
-              className="fixed bottom-16 right-6 rtl:right-auto rtl:left-6 h-14 w-14 rounded-full shadow-lg z-30"
-              onClick={handleAdd}
-            >
-              <Plus className="h-6 w-6" />
-              <span className="sr-only">{t.addEntryButton}</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="icon"
+                  className="fixed bottom-16 right-6 rtl:right-auto rtl:left-6 h-14 w-14 rounded-full shadow-lg z-30"
+                >
+                  <Plus className="h-6 w-6" />
+                  <span className="sr-only">{t.addEntryButton}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" side="top" sideOffset={8} className="w-52">
+                <DropdownMenuItem onClick={handleAdd} className="gap-3 py-3">
+                  <Receipt className="h-5 w-5" />
+                  {t.addTransaction}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleCreateNewFromSelector} className="gap-3 py-3">
+                  <UserPlus className="h-5 w-5" />
+                  {t.addFriend}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </>
         ) : (
           /* Portfolio Tab */
@@ -381,6 +404,11 @@ export default function Home() {
           editEntry={editEntry}
           t={t}
           onSubmit={handleSubmit}
+          ledgers={ledgers.map((l) => ({
+            id: l.id,
+            friendName: friendNames.get(l.id) || "Friend",
+          }))}
+          currentLedgerId={selectedLedgerId}
         />
 
         <SettingsDialog
@@ -393,6 +421,8 @@ export default function Home() {
           inviteCode={selectedLedger?.inviteCode}
           partnerJoined={!!selectedLedger?.user2Id}
           userEmail={user.email}
+          onAddFriend={handleCreateNewFromSelector}
+          onJoinLedger={handleJoinFromSelector}
         />
 
         <HistorySheet

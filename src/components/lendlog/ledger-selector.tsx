@@ -1,12 +1,11 @@
 "use client";
 
-import { Plus, Check, UserPlus, ChevronDown } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Ledger } from "@/hooks/use-ledger";
@@ -18,8 +17,6 @@ interface LedgerSelectorProps {
   friendNames: Map<string, string>;
   t: Translations;
   onSelect: (id: string) => void;
-  onCreateNew: () => void;
-  onJoinNew: () => void;
 }
 
 export function LedgerSelector({
@@ -28,12 +25,17 @@ export function LedgerSelector({
   friendNames,
   t,
   onSelect,
-  onCreateNew,
-  onJoinNew,
 }: LedgerSelectorProps) {
   const currentName = selectedLedgerId
     ? friendNames.get(selectedLedgerId) || "Friend"
     : "Friend";
+
+  // Only show dropdown if there are multiple ledgers to switch between
+  if (ledgers.length <= 1) {
+    return (
+      <h1 className="text-xl font-bold tracking-tight px-1">{currentName}</h1>
+    );
+  }
 
   return (
     <DropdownMenu>
@@ -70,15 +72,6 @@ export function LedgerSelector({
             </DropdownMenuItem>
           );
         })}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={onCreateNew} className="gap-2">
-          <Plus className="h-4 w-4" />
-          {t.addFriend}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={onJoinNew} className="gap-2">
-          <UserPlus className="h-4 w-4" />
-          {t.joinLedger}
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

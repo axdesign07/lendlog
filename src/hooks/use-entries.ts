@@ -72,8 +72,11 @@ export function useEntries(userId: string | null, ledgerId: string | null) {
       note?: string;
       image?: File;
       timestamp?: number;
+      ledgerId?: string;
     }) => {
-      if (!userId || !ledgerId) return;
+      if (!userId) return;
+      const targetLedger = input.ledgerId || ledgerId;
+      if (!targetLedger) return;
 
       let imageUrl: string | undefined;
       if (input.image) {
@@ -90,13 +93,15 @@ export function useEntries(userId: string | null, ledgerId: string | null) {
           timestamp: input.timestamp,
         },
         userId,
-        ledgerId
+        targetLedger
       );
 
-      // Created by current user — no flip needed
-      setEntries((prev) =>
-        [entry, ...prev].sort((a, b) => b.timestamp - a.timestamp)
-      );
+      // Only add to local state if it's the current ledger
+      if (targetLedger === ledgerId) {
+        setEntries((prev) =>
+          [entry, ...prev].sort((a, b) => b.timestamp - a.timestamp)
+        );
+      }
       toast.success("Entry added");
     },
     [userId, ledgerId]

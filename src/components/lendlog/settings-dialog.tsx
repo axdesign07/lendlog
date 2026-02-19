@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Copy, Check, LogOut } from "lucide-react";
+import { Copy, Check, LogOut, Plus, UserPlus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,8 @@ interface SettingsDialogProps {
   inviteCode?: string;
   partnerJoined?: boolean;
   userEmail?: string;
+  onAddFriend: () => void;
+  onJoinLedger: () => void;
 }
 
 export function SettingsDialog({
@@ -38,6 +40,8 @@ export function SettingsDialog({
   inviteCode,
   partnerJoined,
   userEmail,
+  onAddFriend,
+  onJoinLedger,
 }: SettingsDialogProps) {
   const [name, setName] = useState(friendName);
   const [copied, setCopied] = useState(false);
@@ -109,6 +113,34 @@ export function SettingsDialog({
               </div>
             </>
           )}
+
+          {/* Add friend / Join ledger */}
+          <Separator />
+          <div className="space-y-2">
+            <Label>{t.friends}</Label>
+            <Button
+              variant="outline"
+              className="w-full gap-2"
+              onClick={() => {
+                onOpenChange(false);
+                onAddFriend();
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              {t.addFriend}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full gap-2"
+              onClick={() => {
+                onOpenChange(false);
+                onJoinLedger();
+              }}
+            >
+              <UserPlus className="h-4 w-4" />
+              {t.joinLedger}
+            </Button>
+          </div>
 
           {/* Account info + logout */}
           <Separator />
