@@ -407,6 +407,7 @@ export default function Home() {
                     onReject={rejectEntry}
                     onResend={resendEntry}
                     currentUserId={userId}
+                    onAdd={handleAdd}
                   />
                 </div>
               </>

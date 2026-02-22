@@ -16,11 +16,12 @@ interface EntryListProps {
   onReject?: (id: string) => void;
   onResend?: (id: string) => void;
   currentUserId?: string | null;
+  onAdd?: () => void;
 }
 
-export function EntryList({ entries, friendName, t, locale, onEdit, onDelete, onApprove, onReject, onResend, currentUserId }: EntryListProps) {
+export function EntryList({ entries, friendName, t, locale, onEdit, onDelete, onApprove, onReject, onResend, currentUserId, onAdd }: EntryListProps) {
   if (entries.length === 0) {
-    return <EmptyState t={t} />;
+    return <EmptyState t={t} onAdd={onAdd} />;
   }
 
   return (

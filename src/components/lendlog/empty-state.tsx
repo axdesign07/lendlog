@@ -1,13 +1,15 @@
 "use client";
 
-import { Wallet } from "lucide-react";
+import { Wallet, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { Translations } from "@/lib/i18n";
 
 interface EmptyStateProps {
   t: Translations;
+  onAdd?: () => void;
 }
 
-export function EmptyState({ t }: EmptyStateProps) {
+export function EmptyState({ t, onAdd }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-24 px-4 text-center">
       <div className="rounded-full bg-muted p-4 mb-4">
@@ -17,6 +19,12 @@ export function EmptyState({ t }: EmptyStateProps) {
       <p className="text-sm text-muted-foreground max-w-[240px]">
         {t.noEntriesDesc}
       </p>
+      {onAdd && (
+        <Button onClick={onAdd} className="mt-4 gap-2">
+          <Plus className="h-4 w-4" />
+          {t.addEntryButton}
+        </Button>
+      )}
     </div>
   );
 }
