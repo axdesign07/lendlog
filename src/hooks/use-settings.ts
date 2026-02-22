@@ -61,5 +61,15 @@ export function useSettings(userId: string | null, ledgerId?: string | null) {
     [userId, ledgerId, settings]
   );
 
-  return { settings, loading, updateFriendName, updatePreferredCurrency };
+  const updateFriendPhoto = useCallback(
+    async (photoUrl: string | undefined) => {
+      if (!userId) return;
+      const updated = { ...settings, friendPhoto: photoUrl };
+      await saveSettings(updated, userId, ledgerId ?? undefined);
+      setSettings(updated);
+    },
+    [userId, ledgerId, settings]
+  );
+
+  return { settings, loading, updateFriendName, updatePreferredCurrency, updateFriendPhoto };
 }

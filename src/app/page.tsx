@@ -28,6 +28,7 @@ import { MigrationDialog } from "@/components/lendlog/migration-dialog";
 import { LoginPage } from "@/components/lendlog/login-page";
 import { OnboardingPage } from "@/components/lendlog/onboarding-page";
 import { PortfolioView } from "@/components/lendlog/portfolio-view";
+import { FriendAvatar } from "@/components/lendlog/friend-avatar";
 import { checkMigrationNeeded, migrateToSupabase, skipMigration } from "@/lib/migrate";
 import { LOCALES } from "@/lib/i18n";
 import type { LendLogEntry, Currency, EntryType } from "@/types";
@@ -54,7 +55,7 @@ export default function Home() {
   const ledgerId = selectedLedgerId;
 
   const { entries, loading, addEntry, updateEntry, removeEntry, restoreEntry, approveEntry, rejectEntry, resendEntry } = useEntries(userId, ledgerId);
-  const { settings, updateFriendName, updatePreferredCurrency } = useSettings(userId, ledgerId);
+  const { settings, updateFriendName, updatePreferredCurrency, updateFriendPhoto } = useSettings(userId, ledgerId);
   const preferredCurrency = settings.preferredCurrency;
   const { friendBalances, totalByCurrency, convertedTotal, loading: portfolioLoading } = usePortfolio(userId, ledgers, preferredCurrency);
 
@@ -311,7 +312,7 @@ export default function Home() {
             {view === "dashboard" ? (
               <h1 className="text-lg font-bold tracking-tight">{t.appName}</h1>
             ) : (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -321,6 +322,7 @@ export default function Home() {
                   <ArrowLeft className="h-5 w-5" />
                   <span className="sr-only">{t.back}</span>
                 </Button>
+                <FriendAvatar name={settings.friendName} photoUrl={settings.friendPhoto} size="sm" />
                 <h1 className="text-base font-bold tracking-tight">
                   {settings.friendName}
                 </h1>
@@ -356,7 +358,7 @@ export default function Home() {
               <DropdownMenuTrigger asChild>
                 <Button
                   size="icon"
-                  className="fixed bottom-6 right-6 rtl:right-auto rtl:left-6 h-14 w-14 rounded-full shadow-lg z-30"
+                  className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-[calc(1.5rem+env(safe-area-inset-right))] rtl:right-auto rtl:left-[calc(1.5rem+env(safe-area-inset-left))] h-14 w-14 rounded-full shadow-lg z-30"
                 >
                   <Plus className="h-6 w-6" />
                   <span className="sr-only">{t.addEntryButton}</span>
@@ -416,7 +418,7 @@ export default function Home() {
             {/* Friend view FAB — direct add entry */}
             <Button
               size="icon"
-              className="fixed bottom-6 right-6 rtl:right-auto rtl:left-6 h-14 w-14 rounded-full shadow-lg z-30"
+              className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-[calc(1.5rem+env(safe-area-inset-right))] rtl:right-auto rtl:left-[calc(1.5rem+env(safe-area-inset-left))] h-14 w-14 rounded-full shadow-lg z-30"
               onClick={handleAdd}
             >
               <Plus className="h-6 w-6" />
@@ -443,6 +445,8 @@ export default function Home() {
           open={settingsOpen}
           onOpenChange={setSettingsOpen}
           friendName={settings.friendName}
+          friendPhoto={settings.friendPhoto}
+          onFriendPhotoChange={updateFriendPhoto}
           t={t}
           onSave={updateFriendName}
           onLogout={signOut}

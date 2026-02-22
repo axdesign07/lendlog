@@ -23,6 +23,7 @@ export interface LendLogEntry {
 export interface AppSettings {
   friendName: string;
   preferredCurrency?: Currency;
+  friendPhoto?: string;
 }
 
 // Kept for migration from IndexedDB

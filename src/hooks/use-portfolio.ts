@@ -11,6 +11,7 @@ import type { Ledger } from "./use-ledger";
 export interface FriendBalance {
   ledgerId: string;
   friendName: string;
+  friendPhoto?: string;
   balances: NetBalance[];
   hasPartner: boolean;
   convertedTotal?: number;
@@ -56,8 +57,10 @@ export function usePortfolio(
       ]);
 
       const nameMap = new Map<string, string>();
+      const photoMap = new Map<string, string>();
       for (const s of allSettings) {
         nameMap.set(s.ledgerId, s.friendName);
+        if (s.friendPhoto) photoMap.set(s.ledgerId, s.friendPhoto);
       }
 
       const byLedger = new Map<string, LendLogEntry[]>();
@@ -76,6 +79,7 @@ export function usePortfolio(
         const friendData: FriendBalance = {
           ledgerId: ledger.id,
           friendName: nameMap.get(ledger.id) || "Friend",
+          friendPhoto: photoMap.get(ledger.id),
           balances,
           hasPartner: !!ledger.user2Id,
         };

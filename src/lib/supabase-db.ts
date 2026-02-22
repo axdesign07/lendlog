@@ -300,6 +300,7 @@ export async function getSettings(userId: string, ledgerId?: string): Promise<Ap
   return {
     friendName: data.friend_name,
     preferredCurrency: data.preferred_currency || undefined,
+    friendPhoto: data.friend_photo || undefined,
   };
 }
 
@@ -315,22 +316,26 @@ export async function saveSettings(settings: AppSettings, userId: string, ledger
   if (settings.preferredCurrency !== undefined) {
     row.preferred_currency = settings.preferredCurrency || null;
   }
+  if (settings.friendPhoto !== undefined) {
+    row.friend_photo = settings.friendPhoto || null;
+  }
 
   const { error } = await supabase.from("settings").upsert(row);
   if (error) throw error;
 }
 
-export async function getAllSettings(userId: string): Promise<{ ledgerId: string; friendName: string; preferredCurrency?: string }[]> {
+export async function getAllSettings(userId: string): Promise<{ ledgerId: string; friendName: string; preferredCurrency?: string; friendPhoto?: string }[]> {
   const { data, error } = await supabase
     .from("settings")
     .select("*")
     .eq("user_id", userId);
 
   if (error || !data) return [];
-  return data.map((row: { ledger_id: string; friend_name: string; preferred_currency?: string }) => ({
+  return data.map((row: { ledger_id: string; friend_name: string; preferred_currency?: string; friend_photo?: string }) => ({
     ledgerId: row.ledger_id,
     friendName: row.friend_name,
     preferredCurrency: row.preferred_currency || undefined,
+    friendPhoto: row.friend_photo || undefined,
   }));
 }
 

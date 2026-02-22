@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Copy, Check, LogOut, Plus, UserPlus, Trash2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Copy, Check, LogOut, Plus, UserPlus, Trash2, Camera, X, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { FriendAvatar } from "./friend-avatar";
+import { uploadImage, deleteImage } from "@/lib/supabase-db";
 import { CURRENCIES } from "@/lib/currency";
 import type { Currency } from "@/types";
 import type { Translations } from "@/lib/i18n";
@@ -39,6 +41,8 @@ interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   friendName: string;
+  friendPhoto?: string;
+  onFriendPhotoChange: (url: string | undefined) => void;
   t: Translations;
   onSave: (name: string) => void;
   onLogout: () => void;
@@ -57,6 +61,8 @@ export function SettingsDialog({
   open,
   onOpenChange,
   friendName,
+  friendPhoto,
+  onFriendPhotoChange,
   t,
   onSave,
   onLogout,
@@ -73,6 +79,8 @@ export function SettingsDialog({
   const [name, setName] = useState(friendName);
   const [copied, setCopied] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -100,6 +108,42 @@ export function SettingsDialog({
     onDeleteFriend?.();
   };
 
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      // Delete old photo if exists
+      if (friendPhoto) {
+        await deleteImage(friendPhoto);
+      }
+      const url = await uploadImage(file);
+      await onFriendPhotoChange(url);
+    } catch {
+      toast.error("Failed to upload photo");
+    } finally {
+      setUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    if (!friendPhoto) return;
+    setUploading(true);
+    try {
+      await deleteImage(friendPhoto);
+      await onFriendPhotoChange(undefined);
+    } catch {
+      toast.error("Failed to remove photo");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -108,6 +152,53 @@ export function SettingsDialog({
             <DialogTitle>{t.settings}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
+            {/* Friend photo + name */}
+            <div className="flex flex-col items-center gap-3">
+              <div className="relative group">
+                <button
+                  type="button"
+                  className="relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  <FriendAvatar name={friendName} photoUrl={friendPhoto} size="lg" />
+                  {/* Camera overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {uploading ? (
+                      <Loader2 className="h-5 w-5 text-white animate-spin" />
+                    ) : (
+                      <Camera className="h-5 w-5 text-white" />
+                    )}
+                  </div>
+                  {uploading && (
+                    <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40">
+                      <Loader2 className="h-5 w-5 text-white animate-spin" />
+                    </div>
+                  )}
+                </button>
+                {/* Remove button */}
+                {friendPhoto && !uploading && (
+                  <button
+                    type="button"
+                    className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-white shadow-sm hover:bg-destructive/90 transition-colors"
+                    onClick={handleRemovePhoto}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {friendPhoto ? t.changePhoto : t.changePhoto}
+              </p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoSelect}
+              />
+            </div>
+
             {/* Friend name */}
             <div className="space-y-2">
               <Label htmlFor="friendName">{t.friendName}</Label>

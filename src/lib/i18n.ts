@@ -132,6 +132,8 @@ const translations = {
     deleteFriend: "Delete friend",
     deleteFriendConfirm: "Are you sure you want to delete {name}? This will hide all entries with them. You can restore them later.",
     deletedFriends: "Deleted friends",
+    changePhoto: "Change photo",
+    removePhoto: "Remove photo",
   },
   fr: {
     appName: "LendLog",
@@ -236,6 +238,8 @@ const translations = {
     deleteFriend: "Supprimer l'ami",
     deleteFriendConfirm: "\u00CAtes-vous s\u00FBr de vouloir supprimer {name} ? Toutes les entr\u00E9es seront cach\u00E9es. Vous pourrez les restaurer plus tard.",
     deletedFriends: "Amis supprim\u00E9s",
+    changePhoto: "Changer la photo",
+    removePhoto: "Supprimer la photo",
   },
   ar: {
     appName: "LendLog",
@@ -340,6 +344,8 @@ const translations = {
     deleteFriend: "\u062D\u0630\u0641 \u0627\u0644\u0635\u062F\u064A\u0642",
     deleteFriendConfirm: "\u0647\u0644 \u0623\u0646\u062A \u0645\u062A\u0623\u0643\u062F \u0645\u0646 \u062D\u0630\u0641 {name}\u061F \u0633\u064A\u062A\u0645 \u0625\u062E\u0641\u0627\u0621 \u062C\u0645\u064A\u0639 \u0627\u0644\u0645\u0639\u0627\u0645\u0644\u0627\u062A. \u064A\u0645\u0643\u0646\u0643 \u0627\u0633\u062A\u0639\u0627\u062F\u062A\u0647\u0627 \u0644\u0627\u062D\u0642\u0627\u064B.",
     deletedFriends: "\u0627\u0644\u0623\u0635\u062F\u0642\u0627\u0621 \u0627\u0644\u0645\u062D\u0630\u0648\u0641\u0648\u0646",
+    changePhoto: "\u062A\u063A\u064A\u064A\u0631 \u0627\u0644\u0635\u0648\u0631\u0629",
+    removePhoto: "\u062D\u0630\u0641 \u0627\u0644\u0635\u0648\u0631\u0629",
   },
   darija: {
     appName: "LendLog",
@@ -444,6 +450,8 @@ const translations = {
     deleteFriend: "\u062D\u064A\u0651\u062F \u0627\u0644\u0635\u0627\u062D\u0628",
     deleteFriendConfirm: "\u0648\u0627\u0634 \u0645\u062A\u0623\u0643\u062F\u061F \u063A\u0627\u062F\u064A \u064A\u062A\u062D\u064A\u062F {name} \u0648 \u0643\u0627\u0639 \u0627\u0644\u0645\u0639\u0627\u0645\u0644\u0627\u062A \u062F\u064A\u0627\u0644\u0648.",
     deletedFriends: "\u0627\u0644\u0635\u062D\u0627\u0628 \u0627\u0644\u0645\u062D\u064A\u062F\u064A\u0646",
+    changePhoto: "\u0628\u062F\u0644 \u0627\u0644\u062A\u0635\u0648\u064A\u0631\u0629",
+    removePhoto: "\u062D\u064A\u0651\u062F \u0627\u0644\u062A\u0635\u0648\u064A\u0631\u0629",
   },
 };
 

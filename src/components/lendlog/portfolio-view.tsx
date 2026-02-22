@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { ArrowRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
+import { FriendAvatar } from "./friend-avatar";
 import type { FriendBalance } from "@/hooks/use-portfolio";
 import type { NetBalance, Currency } from "@/types";
 import type { Translations } from "@/lib/i18n";
@@ -189,22 +189,13 @@ function FriendCard({
   const hasBalance = friend.balances.length > 0;
   const showConverted = friend.convertedTotal !== undefined && preferredCurrency;
 
-  // Avatar initial
-  const initial = friend.friendName.charAt(0).toUpperCase();
-  const hue = friend.friendName.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) % 360;
-
   return (
     <div
       className="group flex items-center gap-3.5 rounded-xl border bg-card p-3.5 transition-all hover:shadow-sm cursor-pointer active:scale-[0.99]"
       onClick={onSelect}
     >
       {/* Avatar */}
-      <div
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-        style={{ backgroundColor: `oklch(0.6 0.15 ${hue})` }}
-      >
-        {initial}
-      </div>
+      <FriendAvatar name={friend.friendName} photoUrl={friend.friendPhoto} size="md" />
 
       {/* Info */}
       <div className="flex-1 min-w-0">
