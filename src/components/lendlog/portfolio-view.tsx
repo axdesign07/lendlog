@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, TrendingUp, TrendingDown, Scale } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
@@ -18,6 +18,54 @@ interface PortfolioViewProps {
   onSelectFriend: (ledgerId: string) => void;
 }
 
+type NetState = "positive" | "negative" | "mixed" | "settled";
+
+function getNetState(
+  totalByCurrency: NetBalance[],
+  convertedTotal: number | null
+): NetState {
+  if (totalByCurrency.length === 0) return "settled";
+
+  if (convertedTotal !== null) {
+    if (Math.abs(convertedTotal) < 0.01) return "settled";
+    return convertedTotal > 0 ? "positive" : "negative";
+  }
+
+  const hasPositive = totalByCurrency.some((b) => b.amount > 0.01);
+  const hasNegative = totalByCurrency.some((b) => b.amount < -0.01);
+
+  if (hasPositive && hasNegative) return "mixed";
+  if (hasPositive) return "positive";
+  if (hasNegative) return "negative";
+  return "settled";
+}
+
+const stateConfig: Record<
+  NetState,
+  { gradient: string; icon: typeof TrendingUp; label: string }
+> = {
+  positive: {
+    gradient: "linear-gradient(135deg, #059669, #047857)",
+    icon: TrendingUp,
+    label: "net positive",
+  },
+  negative: {
+    gradient: "linear-gradient(135deg, #dc2626, #b91c1c)",
+    icon: TrendingDown,
+    label: "net negative",
+  },
+  mixed: {
+    gradient: "linear-gradient(135deg, #2563eb, #4f46e5)",
+    icon: Scale,
+    label: "mixed",
+  },
+  settled: {
+    gradient: "linear-gradient(135deg, #475569, #334155)",
+    icon: Scale,
+    label: "settled",
+  },
+};
+
 export function PortfolioView({
   friendBalances,
   totalByCurrency,
@@ -26,44 +74,67 @@ export function PortfolioView({
   t,
   onSelectFriend,
 }: PortfolioViewProps) {
-  const hasBalances = totalByCurrency.length > 0;
+  const netState = getNetState(totalByCurrency, convertedTotal);
+  const config = stateConfig[netState];
+  const Icon = config.icon;
   const showConverted = convertedTotal !== null && preferredCurrency;
 
   return (
     <div className="px-4 pb-24 space-y-6">
-      {/* Total Net Worth */}
+      {/* Total Net Worth Card */}
       <div
-        className="rounded-2xl p-5 text-white"
-        style={{
-          backgroundImage: "linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7)",
-        }}
+        className="rounded-2xl p-6 text-white shadow-lg"
+        style={{ backgroundImage: config.gradient }}
       >
-        <p className="text-sm font-medium opacity-80">{t.totalNetWorth}</p>
-        {hasBalances ? (
-          <div className="mt-2 space-y-2">
-            {/* Converted total (if preferred currency set) */}
+        {/* Header row */}
+        <div className="flex items-center gap-2 mb-4">
+          <div
+            className="flex h-8 w-8 items-center justify-center rounded-lg"
+            style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
+          >
+            <Icon className="h-4 w-4 text-white" />
+          </div>
+          <p className="text-sm font-semibold text-white/80">{t.totalNetWorth}</p>
+        </div>
+
+        {netState === "settled" ? (
+          <p className="text-2xl font-bold">{t.allSettled}</p>
+        ) : (
+          <div className="space-y-4">
+            {/* Big converted total */}
             {showConverted && (
               <div>
-                <span dir="ltr" className="text-3xl font-bold tracking-tight">
+                <p dir="ltr" className="text-4xl font-extrabold tracking-tight">
                   {convertedTotal > 0 ? "+" : convertedTotal < 0 ? "\u2212" : ""}
                   {getCurrencySymbol(preferredCurrency)}
                   {Math.abs(convertedTotal).toFixed(2)}
-                </span>
-                <p className="text-xs opacity-60 mt-0.5">{t.approximateTotal}</p>
+                </p>
+                <p className="text-xs font-medium text-white/50 mt-1">
+                  {t.approximateTotal}
+                </p>
               </div>
             )}
 
-            {/* Per-currency breakdown */}
-            <div className={cn("space-y-1", showConverted && "opacity-70 pt-1 border-t border-white/20")}>
-              {!showConverted && null}
+            {/* Per-currency breakdown — always in glass boxes */}
+            <div className="flex flex-wrap gap-2">
               {totalByCurrency.map(({ currency, amount }) => (
-                <div key={currency} className="flex items-baseline gap-2">
-                  <span dir="ltr" className={cn("font-bold tracking-tight", showConverted ? "text-base" : "text-2xl")}>
-                    {amount > 0 ? "+" : ""}
+                <div
+                  key={currency}
+                  className="flex flex-col rounded-xl px-4 py-2.5"
+                  style={{ backgroundColor: "rgba(255,255,255,0.15)" }}
+                >
+                  <span
+                    dir="ltr"
+                    className={cn(
+                      "font-bold tracking-tight text-white",
+                      showConverted ? "text-base" : "text-xl"
+                    )}
+                  >
+                    {amount > 0 ? "+" : amount < 0 ? "\u2212" : ""}
                     {formatCurrency(Math.abs(amount), currency)}
                   </span>
                   {!showConverted && (
-                    <span className="text-xs opacity-70">
+                    <span className="text-[10px] font-medium text-white/60">
                       {amount > 0 ? t.owesYou("") : amount < 0 ? t.youOwe("") : ""}
                     </span>
                   )}
@@ -71,8 +142,6 @@ export function PortfolioView({
               ))}
             </div>
           </div>
-        ) : (
-          <p className="mt-2 text-lg font-semibold opacity-90">{t.allSettled}</p>
         )}
       </div>
 
@@ -139,7 +208,7 @@ function FriendCard({
                       : "text-red-500 dark:text-red-400"
                   )}
                 >
-                  {friend.convertedTotal! > 0 ? "+" : ""}
+                  {friend.convertedTotal! > 0 ? "+" : "\u2212"}
                   {formatCurrency(Math.abs(friend.convertedTotal!), preferredCurrency)}
                 </p>
               )}
@@ -157,7 +226,7 @@ function FriendCard({
                       showConverted && "text-muted-foreground text-xs"
                     )}
                   >
-                    {amount > 0 ? "+" : ""}
+                    {amount > 0 ? "+" : "\u2212"}
                     {formatCurrency(Math.abs(amount), currency)}
                   </span>
                 ))}

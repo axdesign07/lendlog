@@ -18,31 +18,27 @@ interface BalanceSummaryProps {
 
 type BalanceState = "positive" | "negative" | "settled";
 
-function getOverallState(balances: NetBalance[]): BalanceState {
+function getOverallState(balances: NetBalance[], convertedTotal: number | null): BalanceState {
   if (balances.length === 0) return "settled";
 
-  const total = balances.reduce((sum, b) => sum + b.amount, 0);
-  if (Math.abs(total) < 0.01) return "settled";
-  return total > 0 ? "positive" : "negative";
-}
+  // Use converted total if available for accurate state
+  if (convertedTotal !== null) {
+    if (Math.abs(convertedTotal) < 0.01) return "settled";
+    return convertedTotal > 0 ? "positive" : "negative";
+  }
 
-const gradientConfig: Record<
-  BalanceState,
-  { light: string; dark: string }
-> = {
-  positive: {
-    light: "linear-gradient(135deg, #10b981, #059669, #0f766e)",
-    dark: "linear-gradient(135deg, #059669, #047857, #115e59)",
-  },
-  negative: {
-    light: "linear-gradient(135deg, #f43f5e, #ef4444, #b91c1c)",
-    dark: "linear-gradient(135deg, #e11d48, #dc2626, #991b1b)",
-  },
-  settled: {
-    light: "linear-gradient(135deg, #64748b, #475569, #334155)",
-    dark: "linear-gradient(135deg, #475569, #334155, #1e293b)",
-  },
-};
+  // Single currency — use direct amount
+  if (balances.length === 1) {
+    if (Math.abs(balances[0].amount) < 0.01) return "settled";
+    return balances[0].amount > 0 ? "positive" : "negative";
+  }
+
+  // Multi-currency without conversion — use majority direction
+  const positiveCount = balances.filter((b) => b.amount > 0).length;
+  const negativeCount = balances.filter((b) => b.amount < 0).length;
+  if (positiveCount === 0 && negativeCount === 0) return "settled";
+  return positiveCount >= negativeCount ? "positive" : "negative";
+}
 
 function useIsDark() {
   const [isDark, setIsDark] = useState(false);
@@ -62,6 +58,24 @@ function useIsDark() {
 
   return isDark;
 }
+
+const gradientConfig: Record<
+  BalanceState,
+  { light: string; dark: string }
+> = {
+  positive: {
+    light: "linear-gradient(135deg, #059669, #047857)",
+    dark: "linear-gradient(135deg, #047857, #065f46)",
+  },
+  negative: {
+    light: "linear-gradient(135deg, #dc2626, #b91c1c)",
+    dark: "linear-gradient(135deg, #b91c1c, #991b1b)",
+  },
+  settled: {
+    light: "linear-gradient(135deg, #475569, #334155)",
+    dark: "linear-gradient(135deg, #334155, #1e293b)",
+  },
+};
 
 export function BalanceSummary({
   entries,
@@ -87,36 +101,29 @@ export function BalanceSummary({
     [balances]
   );
 
-  const state = getOverallState(balances);
-  const gradient = isDark
-    ? gradientConfig[state].dark
-    : gradientConfig[state].light;
-
-  const primary = sortedBalances[0] ?? null;
-  const secondary = sortedBalances.slice(1);
-
-  // Compute converted total when multi-currency + preferred set
   const hasMultipleCurrencies = balances.length > 1;
   const convertedTotal =
     preferredCurrency && rates && hasMultipleCurrencies
       ? convertBalances(balances, preferredCurrency, rates)
       : null;
 
+  const state = getOverallState(balances, convertedTotal);
+  const gradient = isDark
+    ? gradientConfig[state].dark
+    : gradientConfig[state].light;
+
   return (
     <div className="px-4 py-3">
       <div
         className="relative overflow-hidden rounded-2xl p-6 shadow-lg"
-        style={{
-          backgroundImage: `${gradient}, radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px)`,
-          backgroundSize: "100% 100%, 20px 20px",
-        }}
+        style={{ backgroundImage: gradient }}
       >
         {/* Settled state */}
         {state === "settled" && (
           <div className="flex flex-col items-center justify-center gap-3 py-4">
             <div
-              className="flex h-12 w-12 items-center justify-center rounded-full backdrop-blur-sm"
-              style={{ backgroundColor: "rgba(255,255,255,0.15)" }}
+              className="flex h-12 w-12 items-center justify-center rounded-full"
+              style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
             >
               <Check className="h-6 w-6 text-white" strokeWidth={2.5} />
             </div>
@@ -125,72 +132,64 @@ export function BalanceSummary({
         )}
 
         {/* Has balances */}
-        {primary && (
+        {state !== "settled" && sortedBalances.length > 0 && (
           <div className="flex flex-col gap-4">
-            {/* Converted total (if multi-currency + preferred set) */}
-            {convertedTotal !== null && preferredCurrency && (
-              <div className="flex flex-col">
-                <p dir="ltr" className="text-3xl font-bold tracking-tight text-white">
+            {/* Row 1: Big converted total OR single-currency big amount */}
+            {convertedTotal !== null && preferredCurrency ? (
+              <div className="flex flex-col items-center text-center py-1">
+                <p dir="ltr" className="text-4xl font-extrabold tracking-tight text-white">
                   {convertedTotal > 0 ? "+" : "\u2212"}
                   {getCurrencySymbol(preferredCurrency)}
                   {Math.abs(convertedTotal).toFixed(2)}
                 </p>
-                <p
-                  className="mt-1 text-xs font-medium"
-                  style={{ color: "rgba(255,255,255,0.5)" }}
-                >
+                <p className="mt-1.5 text-sm font-medium text-white/60">
                   {t.approximateTotal}
+                </p>
+              </div>
+            ) : sortedBalances.length === 1 ? (
+              <div className="flex flex-col items-center text-center py-2">
+                <p dir="ltr" className="text-4xl font-extrabold tracking-tight text-white">
+                  {sortedBalances[0].amount > 0 ? "+" : "\u2212"}
+                  {formatCurrency(Math.abs(sortedBalances[0].amount), sortedBalances[0].currency)}
+                </p>
+                <p className="mt-1.5 text-sm font-medium text-white/70">
+                  {sortedBalances[0].amount > 0
+                    ? t.owesYou(friendName)
+                    : t.youOwe(friendName)}
+                </p>
+              </div>
+            ) : (
+              /* Multi-currency without preferred: show largest centered */
+              <div className="flex flex-col items-center text-center py-1">
+                <p dir="ltr" className="text-3xl font-extrabold tracking-tight text-white">
+                  {sortedBalances[0].amount > 0 ? "+" : "\u2212"}
+                  {formatCurrency(Math.abs(sortedBalances[0].amount), sortedBalances[0].currency)}
+                </p>
+                <p className="mt-1 text-sm font-medium text-white/70">
+                  {sortedBalances[0].amount > 0
+                    ? t.owesYou(friendName)
+                    : t.youOwe(friendName)}
                 </p>
               </div>
             )}
 
-            {/* Primary balance */}
-            <div
-              className={cn(
-                "flex flex-col",
-                secondary.length === 0 && convertedTotal === null && "items-center py-2"
-              )}
-            >
-              <p
-                dir="ltr"
-                className={cn(
-                  "font-bold tracking-tight text-white",
-                  convertedTotal !== null ? "text-xl" : secondary.length === 0 ? "text-4xl" : "text-3xl"
-                )}
-              >
-                {primary.amount > 0 ? "+" : "\u2212"}
-                {formatCurrency(Math.abs(primary.amount), primary.currency)}
-              </p>
-              <p
-                className="mt-1 text-sm font-medium"
-                style={{ color: "rgba(255,255,255,0.7)" }}
-              >
-                {primary.amount > 0
-                  ? t.owesYou(friendName)
-                  : t.youOwe(friendName)}
-              </p>
-            </div>
-
-            {/* Secondary balances as glass sub-cards */}
-            {secondary.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {secondary.map(({ currency, amount }) => (
+            {/* Row 2: All currencies in glass boxes (when multi-currency) */}
+            {hasMultipleCurrencies && (
+              <div className="flex flex-wrap gap-2 justify-center">
+                {sortedBalances.map(({ currency, amount }) => (
                   <div
                     key={currency}
-                    className="flex flex-col gap-0.5 rounded-xl px-4 py-3 backdrop-blur-sm"
-                    style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
+                    className="flex flex-col items-center gap-0.5 rounded-xl px-4 py-2.5"
+                    style={{ backgroundColor: "rgba(255,255,255,0.15)" }}
                   >
                     <p
                       dir="ltr"
-                      className="text-lg font-bold tracking-tight text-white"
+                      className="text-base font-bold tracking-tight text-white"
                     >
                       {amount > 0 ? "+" : "\u2212"}
                       {formatCurrency(Math.abs(amount), currency)}
                     </p>
-                    <p
-                      className="text-xs font-medium"
-                      style={{ color: "rgba(255,255,255,0.6)" }}
-                    >
+                    <p className="text-[10px] font-medium text-white/60">
                       {amount > 0
                         ? t.owesYou(friendName)
                         : t.youOwe(friendName)}
