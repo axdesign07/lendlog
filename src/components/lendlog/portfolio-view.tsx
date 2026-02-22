@@ -1,7 +1,7 @@
 "use client";
 
-import { ArrowRight, TrendingUp, TrendingDown, Scale } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { useEffect, useState } from "react";
+import { ArrowRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
 import type { FriendBalance } from "@/hooks/use-portfolio";
@@ -40,31 +40,17 @@ function getNetState(
   return "settled";
 }
 
-const stateConfig: Record<
-  NetState,
-  { gradient: string; icon: typeof TrendingUp; label: string }
-> = {
-  positive: {
-    gradient: "linear-gradient(135deg, #059669, #047857)",
-    icon: TrendingUp,
-    label: "net positive",
-  },
-  negative: {
-    gradient: "linear-gradient(135deg, #dc2626, #b91c1c)",
-    icon: TrendingDown,
-    label: "net negative",
-  },
-  mixed: {
-    gradient: "linear-gradient(135deg, #2563eb, #4f46e5)",
-    icon: Scale,
-    label: "mixed",
-  },
-  settled: {
-    gradient: "linear-gradient(135deg, #475569, #334155)",
-    icon: Scale,
-    label: "settled",
-  },
-};
+function useIsDark() {
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const check = () => setIsDark(document.documentElement.classList.contains("dark"));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+  return isDark;
+}
 
 export function PortfolioView({
   friendBalances,
@@ -75,66 +61,89 @@ export function PortfolioView({
   onSelectFriend,
 }: PortfolioViewProps) {
   const netState = getNetState(totalByCurrency, convertedTotal);
-  const config = stateConfig[netState];
-  const Icon = config.icon;
+  const isDark = useIsDark();
   const showConverted = convertedTotal !== null && preferredCurrency;
 
+  // Subtle, professional color mapping
+  const stateColor = {
+    positive: { accent: isDark ? "#34d399" : "#059669", bg: isDark ? "rgba(52,211,153,0.08)" : "rgba(5,150,105,0.04)" },
+    negative: { accent: isDark ? "#fb7185" : "#e11d48", bg: isDark ? "rgba(251,113,133,0.08)" : "rgba(225,29,72,0.04)" },
+    mixed: { accent: isDark ? "#818cf8" : "#4f46e5", bg: isDark ? "rgba(129,140,248,0.08)" : "rgba(79,70,229,0.04)" },
+    settled: { accent: isDark ? "#94a3b8" : "#64748b", bg: isDark ? "rgba(148,163,184,0.06)" : "rgba(100,116,139,0.04)" },
+  }[netState];
+
+  const StateIcon = netState === "positive" ? TrendingUp : netState === "negative" ? TrendingDown : Minus;
+
   return (
-    <div className="px-4 pb-24 space-y-6">
-      {/* Total Net Worth Card */}
+    <div className="px-4 pt-2 pb-24 space-y-5">
+      {/* Net Worth Card */}
       <div
-        className="rounded-2xl p-6 text-white shadow-lg"
-        style={{ backgroundImage: config.gradient }}
+        className="rounded-2xl border p-6"
+        style={{ backgroundColor: stateColor.bg }}
       >
-        {/* Header row */}
-        <div className="flex items-center gap-2 mb-4">
+        {/* Label */}
+        <div className="flex items-center gap-2 mb-5">
           <div
-            className="flex h-8 w-8 items-center justify-center rounded-lg"
-            style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
+            className="flex h-7 w-7 items-center justify-center rounded-lg"
+            style={{ backgroundColor: stateColor.accent + "18" }}
           >
-            <Icon className="h-4 w-4 text-white" />
+            <StateIcon className="h-3.5 w-3.5" style={{ color: stateColor.accent }} />
           </div>
-          <p className="text-sm font-semibold text-white/80">{t.totalNetWorth}</p>
+          <span className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
+            {t.totalNetWorth}
+          </span>
         </div>
 
         {netState === "settled" ? (
-          <p className="text-2xl font-bold">{t.allSettled}</p>
+          <p className="text-2xl font-semibold text-muted-foreground">{t.allSettled}</p>
         ) : (
-          <div className="space-y-4">
-            {/* Big converted total */}
-            {showConverted && (
+          <div className="space-y-5">
+            {/* Primary amount */}
+            {showConverted ? (
               <div>
-                <p dir="ltr" className="text-4xl font-extrabold tracking-tight">
-                  {convertedTotal > 0 ? "+" : convertedTotal < 0 ? "\u2212" : ""}
+                <p
+                  dir="ltr"
+                  className="text-4xl font-extrabold tracking-tight leading-none"
+                  style={{ color: stateColor.accent }}
+                >
+                  {convertedTotal > 0 ? "+" : "\u2212"}
                   {getCurrencySymbol(preferredCurrency)}
                   {Math.abs(convertedTotal).toFixed(2)}
                 </p>
-                <p className="text-xs font-medium text-white/50 mt-1">
-                  {t.approximateTotal}
-                </p>
+                <p className="text-xs text-muted-foreground mt-2">{t.approximateTotal}</p>
               </div>
-            )}
+            ) : totalByCurrency.length === 1 ? (
+              <p
+                dir="ltr"
+                className="text-4xl font-extrabold tracking-tight leading-none"
+                style={{ color: stateColor.accent }}
+              >
+                {totalByCurrency[0].amount > 0 ? "+" : "\u2212"}
+                {formatCurrency(Math.abs(totalByCurrency[0].amount), totalByCurrency[0].currency)}
+              </p>
+            ) : null}
 
-            {/* Per-currency breakdown — always in glass boxes */}
+            {/* Currency breakdown pills */}
             <div className="flex flex-wrap gap-2">
               {totalByCurrency.map(({ currency, amount }) => (
                 <div
                   key={currency}
-                  className="flex flex-col rounded-xl px-4 py-2.5"
-                  style={{ backgroundColor: "rgba(255,255,255,0.15)" }}
+                  className="flex items-center gap-2 rounded-xl border px-3.5 py-2"
+                  style={{ backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.7)" }}
                 >
                   <span
                     dir="ltr"
                     className={cn(
-                      "font-bold tracking-tight text-white",
-                      showConverted ? "text-base" : "text-xl"
+                      "font-semibold tabular-nums",
+                      showConverted ? "text-sm" : "text-base"
                     )}
+                    style={{ color: amount > 0 ? stateColor.accent : (isDark ? "#fb7185" : "#e11d48") }}
                   >
-                    {amount > 0 ? "+" : amount < 0 ? "\u2212" : ""}
+                    {amount > 0 ? "+" : "\u2212"}
                     {formatCurrency(Math.abs(amount), currency)}
                   </span>
                   {!showConverted && (
-                    <span className="text-[10px] font-medium text-white/60">
+                    <span className="text-[10px] text-muted-foreground">
                       {amount > 0 ? t.owesYou("") : amount < 0 ? t.youOwe("") : ""}
                     </span>
                   )}
@@ -145,9 +154,9 @@ export function PortfolioView({
         )}
       </div>
 
-      {/* Per-Friend Breakdown */}
+      {/* Friends List */}
       <div>
-        <h2 className="text-sm font-semibold text-muted-foreground mb-3 px-1">
+        <h2 className="text-xs font-semibold tracking-wide uppercase text-muted-foreground mb-3 px-1">
           {t.allFriends} ({friendBalances.length})
         </h2>
         <div className="space-y-2">
@@ -180,66 +189,77 @@ function FriendCard({
   const hasBalance = friend.balances.length > 0;
   const showConverted = friend.convertedTotal !== undefined && preferredCurrency;
 
+  // Avatar initial
+  const initial = friend.friendName.charAt(0).toUpperCase();
+  const hue = friend.friendName.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) % 360;
+
   return (
-    <Card
-      className="p-4 transition-colors hover:bg-muted/30 cursor-pointer"
+    <div
+      className="group flex items-center gap-3.5 rounded-xl border bg-card p-3.5 transition-all hover:shadow-sm cursor-pointer active:scale-[0.99]"
       onClick={onSelect}
     >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="font-semibold truncate">{friend.friendName}</p>
-            {!friend.hasPartner && (
-              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                {t.pendingApproval}
-              </span>
-            )}
-          </div>
-          {hasBalance ? (
-            <div className="mt-1">
-              {/* Converted total for this friend */}
-              {showConverted && (
-                <p
-                  dir="ltr"
-                  className={cn(
-                    "text-sm font-semibold",
-                    friend.convertedTotal! > 0
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : "text-red-500 dark:text-red-400"
-                  )}
-                >
-                  {friend.convertedTotal! > 0 ? "+" : "\u2212"}
-                  {formatCurrency(Math.abs(friend.convertedTotal!), preferredCurrency)}
-                </p>
-              )}
-              {/* Per-currency breakdown */}
-              <div className={cn("flex flex-wrap gap-x-3 gap-y-0.5", showConverted && "opacity-60")}>
-                {friend.balances.map(({ currency, amount }) => (
-                  <span
-                    key={currency}
-                    dir="ltr"
-                    className={cn(
-                      "text-sm font-medium",
-                      !showConverted && (amount > 0
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-red-500 dark:text-red-400"),
-                      showConverted && "text-muted-foreground text-xs"
-                    )}
-                  >
-                    {amount > 0 ? "+" : "\u2212"}
-                    {formatCurrency(Math.abs(amount), currency)}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground mt-0.5">{t.allSettled}</p>
+      {/* Avatar */}
+      <div
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+        style={{ backgroundColor: `oklch(0.6 0.15 ${hue})` }}
+      >
+        {initial}
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <p className="font-semibold text-sm truncate">{friend.friendName}</p>
+          {!friend.hasPartner && (
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              {t.pendingApproval}
+            </span>
           )}
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-          <ArrowRight className="h-4 w-4" />
-        </Button>
+        {hasBalance ? (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+            {showConverted && (
+              <span
+                dir="ltr"
+                className={cn(
+                  "text-sm font-semibold tabular-nums",
+                  friend.convertedTotal! > 0
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-rose-600 dark:text-rose-400"
+                )}
+              >
+                {friend.convertedTotal! > 0 ? "+" : "\u2212"}
+                {formatCurrency(Math.abs(friend.convertedTotal!), preferredCurrency)}
+              </span>
+            )}
+            {friend.balances.map(({ currency, amount }) => (
+              <span
+                key={currency}
+                dir="ltr"
+                className={cn(
+                  "tabular-nums",
+                  showConverted
+                    ? "text-xs text-muted-foreground"
+                    : cn(
+                        "text-sm font-semibold",
+                        amount > 0
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-rose-600 dark:text-rose-400"
+                      )
+                )}
+              >
+                {amount > 0 ? "+" : "\u2212"}
+                {formatCurrency(Math.abs(amount), currency)}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground mt-0.5">{t.allSettled}</p>
+        )}
       </div>
-    </Card>
+
+      {/* Arrow */}
+      <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
+    </div>
   );
 }

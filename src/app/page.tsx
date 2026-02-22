@@ -306,22 +306,22 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-xl">
         {/* Header */}
-        <header className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-xl border-b">
           <div className="flex items-center justify-between px-4 h-14">
             {view === "dashboard" ? (
-              <h1 className="text-xl font-bold tracking-tight">{t.appName}</h1>
+              <h1 className="text-lg font-bold tracking-tight">{t.appName}</h1>
             ) : (
               <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9"
+                  className="h-9 w-9 -ms-1"
                   onClick={handleBack}
                 >
                   <ArrowLeft className="h-5 w-5" />
                   <span className="sr-only">{t.back}</span>
                 </Button>
-                <h1 className="text-lg font-bold tracking-tight">
+                <h1 className="text-base font-bold tracking-tight">
                   {settings.friendName}
                 </h1>
               </div>
