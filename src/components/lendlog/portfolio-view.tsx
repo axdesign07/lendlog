@@ -92,9 +92,11 @@ export function PortfolioView({
 
   const handleConfirmDelete = () => {
     if (deleteTarget && onDeleteFriend) {
-      onDeleteFriend(deleteTarget.ledgerId);
+      // Capture before clearing state
+      const ledgerId = deleteTarget.ledgerId;
+      setDeleteTarget(null);
+      onDeleteFriend(ledgerId);
     }
-    setDeleteTarget(null);
   };
 
   return (
@@ -217,7 +219,7 @@ export function PortfolioView({
       </div>
 
       {/* Delete confirmation */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t.deleteFriend}</AlertDialogTitle>
@@ -229,7 +231,10 @@ export function PortfolioView({
             <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-white hover:bg-destructive/90"
-              onClick={handleConfirmDelete}
+              onClick={(e) => {
+                e.preventDefault();
+                handleConfirmDelete();
+              }}
             >
               {t.deleteFriend}
             </AlertDialogAction>
@@ -325,13 +330,17 @@ function FriendRow({
       <div className="relative overflow-hidden">
         {/* Delete button behind — fixed on the right */}
         {onRequestDelete && (
-          <button
-            type="button"
-            onClick={handleDeleteClick}
-            className="absolute inset-y-0 right-0 flex items-center justify-center w-[76px] bg-destructive active:bg-destructive/80 transition-colors"
+          <div
+            className="absolute inset-y-0 right-0 z-0 flex items-center justify-center w-[76px] bg-destructive"
           >
-            <Trash2 className="h-5 w-5 text-white" />
-          </button>
+            <button
+              type="button"
+              onClick={handleDeleteClick}
+              className="flex items-center justify-center w-full h-full active:bg-destructive/80 transition-colors"
+            >
+              <Trash2 className="h-5 w-5 text-white" />
+            </button>
+          </div>
         )}
 
         {/* Draggable row */}
@@ -345,7 +354,7 @@ function FriendRow({
           onDragStart={handleDragStart}
           onDrag={handleDrag}
           onDragEnd={handleDragEnd}
-          className="relative bg-card touch-pan-y"
+          className="relative z-[1] bg-card touch-pan-y"
         >
           <div
             className="flex items-center gap-3.5 px-4 py-3.5 cursor-pointer transition-colors active:bg-accent/50"
