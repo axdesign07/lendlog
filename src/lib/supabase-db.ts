@@ -342,21 +342,17 @@ export async function getAllSettings(userId: string): Promise<{ ledgerId: string
 // --- Ledger soft delete/restore ---
 
 export async function softDeleteLedger(ledgerId: string): Promise<void> {
-  const { error, data } = await supabase
-    .from("ledgers")
-    .update({ deleted_at: Date.now() })
-    .eq("id", ledgerId)
-    .select("id");
+  const { error } = await supabase.rpc("soft_delete_ledger", {
+    p_ledger_id: ledgerId,
+  });
 
-  console.log("[LendLog] softDeleteLedger", { ledgerId, error, rowsUpdated: data?.length ?? 0 });
   if (error) throw error;
 }
 
 export async function restoreLedgerDb(ledgerId: string): Promise<void> {
-  const { error } = await supabase
-    .from("ledgers")
-    .update({ deleted_at: null })
-    .eq("id", ledgerId);
+  const { error } = await supabase.rpc("restore_ledger", {
+    p_ledger_id: ledgerId,
+  });
 
   if (error) throw error;
 }
