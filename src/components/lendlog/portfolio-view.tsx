@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { motion, useMotionValue, useTransform, animate } from "motion/react";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { motion, useMotionValue, animate, AnimatePresence } from "motion/react";
 import { ChevronRight, TrendingUp, TrendingDown, Minus, Trash2 } from "lucide-react";
 import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
 import { FriendAvatar } from "./friend-avatar";
@@ -108,7 +108,6 @@ export function PortfolioView({
           className="rounded-2xl border p-6"
           style={{ backgroundColor: stateColor.bg }}
         >
-          {/* Label */}
           <div className="flex items-center gap-2 mb-5">
             <div
               className="flex h-7 w-7 items-center justify-center rounded-lg"
@@ -125,7 +124,6 @@ export function PortfolioView({
             <p className="text-2xl font-semibold text-muted-foreground">{t.allSettled}</p>
           ) : (
             <div className="space-y-5">
-              {/* Primary amount */}
               {showConverted ? (
                 <div>
                   <motion.p
@@ -156,7 +154,6 @@ export function PortfolioView({
                 </motion.p>
               ) : null}
 
-              {/* Currency breakdown pills */}
               <div className="flex flex-wrap gap-2">
                 {totalByCurrency.map(({ currency, amount }, i) => (
                   <motion.div
@@ -190,7 +187,7 @@ export function PortfolioView({
           )}
         </motion.div>
 
-        {/* Friends List — iOS Grouped Inset */}
+        {/* Friends List */}
         <div>
           <h2 className="text-xs font-semibold tracking-wide uppercase text-muted-foreground mb-3 px-1">
             {t.allFriends} ({friendBalances.length})
@@ -201,18 +198,20 @@ export function PortfolioView({
             transition={{ ...springAnim, delay: 0.1 }}
             className="rounded-2xl border bg-card overflow-hidden"
           >
-            {friendBalances.map((friend, index) => (
-              <FriendRow
-                key={friend.ledgerId}
-                friend={friend}
-                preferredCurrency={preferredCurrency}
-                t={t}
-                onSelect={() => onSelectFriend(friend.ledgerId)}
-                onDelete={onDeleteFriend ? () => setDeleteTarget({ ledgerId: friend.ledgerId, name: friend.friendName }) : undefined}
-                isLast={index === friendBalances.length - 1}
-                index={index}
-              />
-            ))}
+            <AnimatePresence initial={false}>
+              {friendBalances.map((friend, index) => (
+                <FriendRow
+                  key={friend.ledgerId}
+                  friend={friend}
+                  preferredCurrency={preferredCurrency}
+                  t={t}
+                  onSelect={() => onSelectFriend(friend.ledgerId)}
+                  onRequestDelete={onDeleteFriend ? () => setDeleteTarget({ ledgerId: friend.ledgerId, name: friend.friendName }) : undefined}
+                  isLast={index === friendBalances.length - 1}
+                  index={index}
+                />
+              ))}
+            </AnimatePresence>
           </motion.div>
         </div>
       </div>
@@ -241,14 +240,16 @@ export function PortfolioView({
   );
 }
 
-const DELETE_THRESHOLD = -80;
+/* ── Swipeable Friend Row ──────────────────────────────── */
+
+const SNAP_OPEN = -76; // width of the delete button area
 
 function FriendRow({
   friend,
   preferredCurrency,
   t,
   onSelect,
-  onDelete,
+  onRequestDelete,
   isLast,
   index,
 }: {
@@ -256,71 +257,102 @@ function FriendRow({
   preferredCurrency?: Currency;
   t: Translations;
   onSelect: () => void;
-  onDelete?: () => void;
+  onRequestDelete?: () => void;
   isLast: boolean;
   index: number;
 }) {
   const hasBalance = friend.balances.length > 0;
   const showConverted = friend.convertedTotal !== undefined && preferredCurrency;
-  const x = useMotionValue(0);
-  const deleteOpacity = useTransform(x, [0, DELETE_THRESHOLD], [0, 1]);
-  const deleteScale = useTransform(x, [0, DELETE_THRESHOLD], [0.5, 1]);
-  const isDragging = useRef(false);
 
-  const handleDragEnd = () => {
-    const current = x.get();
-    if (current < DELETE_THRESHOLD && onDelete) {
-      // Snap away then fire delete
-      animate(x, -300, { type: "spring", stiffness: 500, damping: 30 });
-      setTimeout(() => onDelete(), 200);
-    } else {
-      animate(x, 0, { type: "spring", stiffness: 500, damping: 30 });
+  const x = useMotionValue(0);
+  const [isOpen, setIsOpen] = useState(false);
+  const wasDragging = useRef(false);
+  const dragStartX = useRef(0);
+
+  // Snap to open or closed
+  const snapTo = useCallback((target: number) => {
+    animate(x, target, { type: "spring", stiffness: 500, damping: 35 });
+    setIsOpen(target !== 0);
+  }, [x]);
+
+  const handleDragStart = () => {
+    dragStartX.current = x.get();
+    wasDragging.current = false;
+  };
+
+  const handleDrag = () => {
+    // If we moved more than 4px, consider it a drag
+    if (Math.abs(x.get() - dragStartX.current) > 4) {
+      wasDragging.current = true;
     }
   };
 
-  const handleClick = () => {
-    // Don't navigate if we were dragging
-    if (!isDragging.current) {
+  const handleDragEnd = () => {
+    const current = x.get();
+    // If dragged past halfway of the snap zone → open, else close
+    if (current < SNAP_OPEN / 2) {
+      snapTo(SNAP_OPEN);
+    } else {
+      snapTo(0);
+    }
+  };
+
+  const handleRowClick = () => {
+    if (wasDragging.current) return;
+    if (isOpen) {
+      snapTo(0);
+    } else {
       onSelect();
     }
   };
 
+  const handleDeleteClick = () => {
+    snapTo(0);
+    // Small delay so the row slides back first
+    setTimeout(() => {
+      onRequestDelete?.();
+    }, 150);
+  };
+
   return (
     <motion.div
-      initial={{ opacity: 0, x: -8 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30, delay: 0.15 + index * 0.04 }}
+      layout
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      exit={{ opacity: 0, height: 0, transition: { duration: 0.25, ease: "easeInOut" } }}
+      transition={{ type: "spring", stiffness: 300, damping: 30, delay: index * 0.04 }}
     >
       <div className="relative overflow-hidden">
-        {/* Delete action behind the row */}
-        {onDelete && (
-          <motion.div
-            style={{ opacity: deleteOpacity, scale: deleteScale }}
-            className="absolute inset-y-0 right-0 flex items-center justify-center w-20 bg-destructive"
+        {/* Delete button behind — fixed on the right */}
+        {onRequestDelete && (
+          <button
+            type="button"
+            onClick={handleDeleteClick}
+            className="absolute inset-y-0 right-0 flex items-center justify-center w-[76px] bg-destructive active:bg-destructive/80 transition-colors"
           >
             <Trash2 className="h-5 w-5 text-white" />
-          </motion.div>
+          </button>
         )}
 
-        {/* Swipeable row */}
+        {/* Draggable row */}
         <motion.div
           style={{ x }}
-          drag={onDelete ? "x" : false}
-          dragConstraints={{ left: -120, right: 0 }}
-          dragElastic={{ left: 0.3, right: 0 }}
-          onDragStart={() => { isDragging.current = true; }}
+          drag={onRequestDelete ? "x" : false}
+          dragDirectionLock
+          dragConstraints={{ left: SNAP_OPEN, right: 0 }}
+          dragElastic={0.1}
+          dragMomentum={false}
+          onDragStart={handleDragStart}
+          onDrag={handleDrag}
           onDragEnd={handleDragEnd}
-          onDragTransitionEnd={() => { setTimeout(() => { isDragging.current = false; }, 50); }}
-          className="relative bg-card"
+          className="relative bg-card touch-pan-y"
         >
           <div
             className="flex items-center gap-3.5 px-4 py-3.5 cursor-pointer transition-colors active:bg-accent/50"
-            onClick={handleClick}
+            onClick={handleRowClick}
           >
-            {/* Avatar */}
             <FriendAvatar name={friend.friendName} photoUrl={friend.friendPhoto} size="md" />
 
-            {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <p className="font-semibold text-sm truncate">{friend.friendName}</p>
@@ -372,13 +404,11 @@ function FriendRow({
               )}
             </div>
 
-            {/* Chevron disclosure */}
             <ChevronRight className="h-4 w-4 text-muted-foreground/30 shrink-0" />
           </div>
         </motion.div>
       </div>
 
-      {/* iOS-style separator — inset from leading edge */}
       {!isLast && (
         <div className="ms-[4.25rem] border-b border-separator" />
       )}
