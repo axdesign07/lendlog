@@ -90,12 +90,14 @@ export function PortfolioView({
 
   const StateIcon = netState === "positive" ? TrendingUp : netState === "negative" ? TrendingDown : Minus;
 
-  const handleConfirmDelete = () => {
-    if (deleteTarget && onDeleteFriend) {
-      // Capture before clearing state
-      const ledgerId = deleteTarget.ledgerId;
-      setDeleteTarget(null);
-      onDeleteFriend(ledgerId);
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget || !onDeleteFriend) return;
+    const { ledgerId } = deleteTarget;
+    setDeleteTarget(null);
+    try {
+      await onDeleteFriend(ledgerId);
+    } catch (err) {
+      console.error("[LendLog] delete failed:", err);
     }
   };
 

@@ -342,11 +342,13 @@ export async function getAllSettings(userId: string): Promise<{ ledgerId: string
 // --- Ledger soft delete/restore ---
 
 export async function softDeleteLedger(ledgerId: string): Promise<void> {
-  const { error } = await supabase
+  const { error, data } = await supabase
     .from("ledgers")
     .update({ deleted_at: Date.now() })
-    .eq("id", ledgerId);
+    .eq("id", ledgerId)
+    .select("id");
 
+  console.log("[LendLog] softDeleteLedger", { ledgerId, error, rowsUpdated: data?.length ?? 0 });
   if (error) throw error;
 }
 
