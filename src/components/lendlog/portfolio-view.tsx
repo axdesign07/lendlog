@@ -90,15 +90,11 @@ export function PortfolioView({
 
   const StateIcon = netState === "positive" ? TrendingUp : netState === "negative" ? TrendingDown : Minus;
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = () => {
     if (!deleteTarget || !onDeleteFriend) return;
     const { ledgerId } = deleteTarget;
     setDeleteTarget(null);
-    try {
-      await onDeleteFriend(ledgerId);
-    } catch (err) {
-      console.error("[LendLog] delete failed:", err);
-    }
+    onDeleteFriend(ledgerId);
   };
 
   return (
@@ -275,7 +271,7 @@ function FriendRow({
 
   // Snap to open or closed
   const snapTo = useCallback((target: number) => {
-    animate(x, target, { type: "spring", stiffness: 500, damping: 35 });
+    animate(x, target, { type: "spring", stiffness: 400, damping: 30 });
     setIsOpen(target !== 0);
   }, [x]);
 
@@ -323,7 +319,7 @@ function FriendRow({
       layout
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: "auto" }}
-      exit={{ opacity: 0, height: 0, transition: { duration: 0.25, ease: "easeInOut" } }}
+      exit={{ opacity: 0, height: 0, transition: { type: "spring", stiffness: 300, damping: 30 } }}
       transition={{ type: "spring", stiffness: 300, damping: 30, delay: index * 0.04 }}
     >
       <div className="relative overflow-hidden">
