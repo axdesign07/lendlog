@@ -7,7 +7,6 @@ import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
 import { FriendAvatar } from "./friend-avatar";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -15,6 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import type { FriendBalance } from "@/hooks/use-portfolio";
 import type { NetBalance, Currency } from "@/types";
 import type { Translations } from "@/lib/i18n";
@@ -229,15 +229,12 @@ export function PortfolioView({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-white hover:bg-destructive/90"
-              onClick={(e) => {
-                e.preventDefault();
-                handleConfirmDelete();
-              }}
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
             >
               {t.deleteFriend}
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
