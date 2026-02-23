@@ -157,6 +157,10 @@ export default function Home() {
     setView("dashboard");
   };
 
+  const handleDeleteFriendFromDashboard = async (ledgerId: string) => {
+    await deleteLedger(ledgerId);
+  };
+
   const handleCreateNew = async () => {
     await createLedger();
     setSettingsOpen(true);
@@ -293,6 +297,7 @@ export default function Home() {
                     preferredCurrency={preferredCurrency}
                     t={t}
                     onSelectFriend={handleSelectFriend}
+                    onDeleteFriend={handleDeleteFriendFromDashboard}
                   />
                 )}
               </div>
