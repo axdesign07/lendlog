@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -37,18 +36,23 @@ export function FilterBar({
   };
 
   return (
-    <div className="flex items-center gap-2 px-4 py-3 flex-wrap">
-      <div className="flex gap-1">
+    <div className="flex items-center gap-3 px-4 py-3 flex-wrap">
+      {/* iOS-style segmented control */}
+      <div className="inline-flex rounded-xl bg-muted/60 p-1 gap-0.5">
         {(["all", "lent", "borrowed"] as const).map((value) => (
-          <Button
+          <button
             key={value}
-            variant={typeFilter === value ? "default" : "outline"}
-            size="sm"
-            className={cn("h-8 text-xs", typeFilter === value && "pointer-events-none")}
+            type="button"
+            className={cn(
+              "relative px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all select-none",
+              typeFilter === value
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground active:bg-card/50"
+            )}
             onClick={() => onTypeFilterChange(value)}
           >
             {filterLabels[value]}
-          </Button>
+          </button>
         ))}
       </div>
 
@@ -56,7 +60,7 @@ export function FilterBar({
         value={currencyFilter}
         onValueChange={(v) => onCurrencyFilterChange(v as Currency | "all")}
       >
-        <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs">
+        <SelectTrigger className="h-8 w-auto min-w-[110px] text-xs rounded-xl">
           <SelectValue placeholder={t.currency} />
         </SelectTrigger>
         <SelectContent>

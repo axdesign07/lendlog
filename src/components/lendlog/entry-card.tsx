@@ -22,9 +22,10 @@ interface EntryCardProps {
   onReject?: (id: string) => void;
   onResend?: (id: string) => void;
   currentUserId?: string | null;
+  isLast?: boolean;
 }
 
-export function EntryCard({ entry, friendName, t, locale, onEdit, onDelete, onApprove, onReject, onResend, currentUserId }: EntryCardProps) {
+export function EntryCard({ entry, friendName, t, locale, onEdit, onDelete, onApprove, onReject, onResend, currentUserId, isLast }: EntryCardProps) {
   const [imageOpen, setImageOpen] = useState(false);
   const imageSrc = useImage(entry.imageUrl);
   const isLent = entry.type === "lent";
@@ -50,30 +51,35 @@ export function EntryCard({ entry, friendName, t, locale, onEdit, onDelete, onAp
 
   return (
     <>
-      <div
-        className={cn(
-          "rounded-xl border bg-card p-4 transition-all",
-          "border-l-[3px] rtl:border-l rtl:border-r-[3px]",
-          isLent
-            ? "border-l-emerald-500 dark:border-l-emerald-400 rtl:border-r-emerald-500 dark:rtl:border-r-emerald-400"
-            : "border-l-rose-500 dark:border-l-rose-400 rtl:border-r-rose-500 dark:rtl:border-r-rose-400",
-          !isApproved && "opacity-75"
-        )}
-      >
-        <div className="flex items-start justify-between gap-3">
+      <div className={cn(!isApproved && "opacity-75")}>
+        {/* Main row */}
+        <div className="flex items-start gap-3 px-4 py-3.5">
+          {/* Type indicator dot */}
+          <div className="mt-2 shrink-0">
+            <div
+              className={cn(
+                "h-2.5 w-2.5 rounded-full",
+                isLent
+                  ? "bg-emerald-500 dark:bg-emerald-400"
+                  : "bg-rose-500 dark:bg-rose-400"
+              )}
+            />
+          </div>
+
+          {/* Content */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1.5">
+            <div className="flex items-center gap-2 mb-0.5">
               <p dir="ltr" className="text-[11px] text-muted-foreground tabular-nums">
                 {formattedDate} {t.at} {formattedTime}
               </p>
               {isPending && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
                   <Clock className="h-2.5 w-2.5" />
                   {t.pendingApproval}
                 </span>
               )}
               {isRejected && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400">
                   <XCircle className="h-2.5 w-2.5" />
                   {t.rejected}
                 </span>
@@ -99,12 +105,13 @@ export function EntryCard({ entry, friendName, t, locale, onEdit, onDelete, onAp
             )}
           </div>
 
+          {/* Actions */}
           <div className="flex items-center gap-0.5 shrink-0">
             {imageSrc && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-muted-foreground"
+                className="h-8 w-8 text-muted-foreground rounded-full"
                 onClick={() => setImageOpen(true)}
               >
                 <ImageIcon className="h-3.5 w-3.5" />
@@ -115,7 +122,7 @@ export function EntryCard({ entry, friendName, t, locale, onEdit, onDelete, onAp
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-full"
                   onClick={() => onEdit(entry)}
                 >
                   <Pencil className="h-3.5 w-3.5" />
@@ -123,7 +130,7 @@ export function EntryCard({ entry, friendName, t, locale, onEdit, onDelete, onAp
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-full"
                   onClick={() => onDelete(entry.id)}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -135,10 +142,10 @@ export function EntryCard({ entry, friendName, t, locale, onEdit, onDelete, onAp
 
         {/* Approval actions */}
         {canApprove && (
-          <div className="flex items-center gap-2 mt-3 pt-3 border-t">
+          <div className="flex items-center gap-2 mx-4 mb-3 pt-3 border-t border-separator">
             <Button
               size="sm"
-              className="flex-1 h-8 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="flex-1 h-9 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
               onClick={() => onApprove?.(entry.id)}
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
@@ -147,7 +154,7 @@ export function EntryCard({ entry, friendName, t, locale, onEdit, onDelete, onAp
             <Button
               size="sm"
               variant="outline"
-              className="flex-1 h-8 gap-1.5 text-rose-600 border-rose-200 hover:bg-rose-50 dark:text-rose-400 dark:border-rose-800 dark:hover:bg-rose-950"
+              className="flex-1 h-9 gap-1.5 text-rose-600 border-rose-200 hover:bg-rose-50 dark:text-rose-400 dark:border-rose-800 dark:hover:bg-rose-950 rounded-xl"
               onClick={() => onReject?.(entry.id)}
             >
               <XCircle className="h-3.5 w-3.5" />
@@ -158,12 +165,12 @@ export function EntryCard({ entry, friendName, t, locale, onEdit, onDelete, onAp
 
         {/* Resend */}
         {canResend && (
-          <div className="flex items-center gap-2 mt-3 pt-3 border-t">
-            <Button size="sm" variant="outline" className="flex-1 h-8 gap-1.5" onClick={() => onEdit(entry)}>
+          <div className="flex items-center gap-2 mx-4 mb-3 pt-3 border-t border-separator">
+            <Button size="sm" variant="outline" className="flex-1 h-9 gap-1.5 rounded-xl" onClick={() => onEdit(entry)}>
               <Pencil className="h-3.5 w-3.5" />
               {t.editAndResend}
             </Button>
-            <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={() => onResend?.(entry.id)}>
+            <Button size="sm" variant="outline" className="h-9 gap-1.5 rounded-xl" onClick={() => onResend?.(entry.id)}>
               <RotateCcw className="h-3.5 w-3.5" />
               {t.resend}
             </Button>
@@ -172,20 +179,25 @@ export function EntryCard({ entry, friendName, t, locale, onEdit, onDelete, onAp
 
         {/* My pending */}
         {isMyEntry && isPending && (
-          <div className="flex items-center gap-2 mt-3 pt-3 border-t">
-            <Button size="sm" variant="ghost" className="h-8 gap-1.5" onClick={() => onEdit(entry)}>
+          <div className="flex items-center gap-2 mx-4 mb-3 pt-3 border-t border-separator">
+            <Button size="sm" variant="ghost" className="h-8 gap-1.5 rounded-full" onClick={() => onEdit(entry)}>
               <Pencil className="h-3.5 w-3.5" />
               {t.editEntry}
             </Button>
             <Button
               size="sm"
               variant="ghost"
-              className="h-8 gap-1.5 text-destructive hover:text-destructive"
+              className="h-8 gap-1.5 text-destructive hover:text-destructive rounded-full"
               onClick={() => onDelete(entry.id)}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </div>
+        )}
+
+        {/* iOS-style separator */}
+        {!isLast && (
+          <div className="ms-[2.75rem] border-b border-separator" />
         )}
       </div>
 

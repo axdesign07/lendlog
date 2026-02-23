@@ -71,5 +71,6 @@ export function useSettings(userId: string | null, ledgerId?: string | null) {
     [userId, ledgerId, settings]
   );
 
+
   return { settings, loading, updateFriendName, updatePreferredCurrency, updateFriendPhoto };
 }

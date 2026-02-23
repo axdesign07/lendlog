@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useEffect, useState } from "react";
+import { motion } from "motion/react";
 import { Check, TrendingUp, TrendingDown } from "lucide-react";
 import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
 import { calculateNetBalances } from "@/lib/balance";
@@ -47,6 +48,8 @@ function useIsDark() {
   }, []);
   return isDark;
 }
+
+const spring = { type: "spring" as const, stiffness: 300, damping: 30 };
 
 export function BalanceSummary({
   entries,
@@ -96,13 +99,21 @@ export function BalanceSummary({
 
   return (
     <div className="px-4 py-3">
-      <div
+      <motion.div
+        initial={{ opacity: 0, scale: 0.97 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={spring}
         className="rounded-2xl border p-6"
         style={{ backgroundColor: stateColor.bg }}
       >
         {/* Settled */}
         {state === "settled" && (
-          <div className="flex flex-col items-center justify-center gap-3 py-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ ...spring, delay: 0.1 }}
+            className="flex flex-col items-center justify-center gap-3 py-4"
+          >
             <div
               className="flex h-11 w-11 items-center justify-center rounded-full"
               style={{ backgroundColor: stateColor.accent + "18" }}
@@ -110,7 +121,7 @@ export function BalanceSummary({
               <Check className="h-5 w-5" style={{ color: stateColor.accent }} />
             </div>
             <p className="text-lg font-semibold text-muted-foreground">{t.allSettled}</p>
-          </div>
+          </motion.div>
         )}
 
         {/* Has balances */}
@@ -132,43 +143,55 @@ export function BalanceSummary({
             {/* Big number */}
             {convertedTotal !== null && preferredCurrency ? (
               <div>
-                <p
+                <motion.p
                   dir="ltr"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ ...spring, delay: 0.1 }}
                   className="text-4xl font-extrabold tracking-tight leading-none"
                   style={{ color: stateColor.accent }}
                 >
                   {convertedTotal > 0 ? "+" : "\u2212"}
                   {getCurrencySymbol(preferredCurrency)}
                   {Math.abs(convertedTotal).toFixed(2)}
-                </p>
+                </motion.p>
                 <p className="text-xs text-muted-foreground mt-2">{t.approximateTotal}</p>
               </div>
             ) : sortedBalances.length === 1 ? (
-              <p
+              <motion.p
                 dir="ltr"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ ...spring, delay: 0.1 }}
                 className="text-4xl font-extrabold tracking-tight leading-none"
                 style={{ color: stateColor.accent }}
               >
                 {sortedBalances[0].amount > 0 ? "+" : "\u2212"}
                 {formatCurrency(Math.abs(sortedBalances[0].amount), sortedBalances[0].currency)}
-              </p>
+              </motion.p>
             ) : (
-              <p
+              <motion.p
                 dir="ltr"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ ...spring, delay: 0.1 }}
                 className="text-3xl font-extrabold tracking-tight leading-none"
                 style={{ color: stateColor.accent }}
               >
                 {sortedBalances[0].amount > 0 ? "+" : "\u2212"}
                 {formatCurrency(Math.abs(sortedBalances[0].amount), sortedBalances[0].currency)}
-              </p>
+              </motion.p>
             )}
 
             {/* Currency breakdown pills */}
             {hasMultipleCurrencies && (
               <div className="flex flex-wrap gap-2">
-                {sortedBalances.map(({ currency, amount }) => (
-                  <div
+                {sortedBalances.map(({ currency, amount }, i) => (
+                  <motion.div
                     key={currency}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ ...spring, delay: 0.15 + i * 0.05 }}
                     className="flex items-center gap-2 rounded-xl border px-3.5 py-2"
                     style={{
                       backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.7)",
@@ -189,13 +212,13 @@ export function BalanceSummary({
                     <span className="text-[10px] text-muted-foreground">
                       {amount > 0 ? t.owesYou(friendName) : t.youOwe(friendName)}
                     </span>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             )}
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }

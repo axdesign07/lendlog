@@ -9,7 +9,6 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { FileSpreadsheet, FileText } from "lucide-react";
 import { filterByDateRange, exportToCSV, exportToPDF } from "@/lib/export";
 import type { LendLogEntry } from "@/types";
@@ -63,29 +62,29 @@ export function ExportSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-2xl px-6 pb-8 pt-2 gap-0">
+      <SheetContent side="bottom" className="px-6 pb-8 pt-2 gap-0">
         <SheetHeader className="pb-2">
-          <SheetTitle className="text-lg">Export</SheetTitle>
+          <SheetTitle className="text-lg font-bold">Export</SheetTitle>
         </SheetHeader>
 
         <div className="space-y-5 py-4">
           <div className="flex gap-3">
             <div className="flex-1 space-y-2">
-              <Label>From</Label>
+              <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">From</label>
               <input
                 type="date"
                 value={from}
                 onChange={(e) => setFrom(e.target.value)}
-                className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex h-12 w-full rounded-xl border border-input bg-background px-3.5 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </div>
             <div className="flex-1 space-y-2">
-              <Label>To</Label>
+              <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">To</label>
               <input
                 type="date"
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
-                className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex h-12 w-full rounded-xl border border-input bg-background px-3.5 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </div>
           </div>
@@ -98,7 +97,7 @@ export function ExportSheet({
         <SheetFooter className="flex-row gap-3 pt-4">
           <Button
             variant="outline"
-            className="flex-1 h-11 gap-2"
+            className="flex-1 h-12 gap-2 rounded-2xl text-[15px]"
             onClick={handleCSV}
             disabled={filteredEntries.length === 0}
           >
@@ -106,7 +105,7 @@ export function ExportSheet({
             CSV
           </Button>
           <Button
-            className="flex-1 h-11 gap-2"
+            className="flex-1 h-12 gap-2 rounded-2xl text-[15px] font-semibold"
             onClick={handlePDF}
             disabled={filteredEntries.length === 0}
           >

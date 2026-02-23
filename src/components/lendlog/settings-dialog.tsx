@@ -1,18 +1,15 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Copy, Check, LogOut, Plus, UserPlus, Trash2, Camera, X, Loader2 } from "lucide-react";
+import { Copy, Check, LogOut, Plus, UserPlus, Trash2, Camera, X, Loader2, ChevronRight } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -114,7 +111,6 @@ export function SettingsDialog({
 
     setUploading(true);
     try {
-      // Delete old photo if exists
       if (friendPhoto) {
         await deleteImage(friendPhoto);
       }
@@ -124,7 +120,6 @@ export function SettingsDialog({
       toast.error("Failed to upload photo");
     } finally {
       setUploading(false);
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -146,14 +141,15 @@ export function SettingsDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{t.settings}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            {/* Friend photo + name */}
-            <div className="flex flex-col items-center gap-3">
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto px-0 pb-8 pt-2 gap-0">
+          <SheetHeader className="px-6 pb-4">
+            <SheetTitle className="text-lg font-bold">{t.settings}</SheetTitle>
+          </SheetHeader>
+
+          <div className="space-y-6">
+            {/* Friend photo + name — centered header */}
+            <div className="flex flex-col items-center gap-3 px-6">
               <div className="relative group">
                 <button
                   type="button"
@@ -162,7 +158,6 @@ export function SettingsDialog({
                   disabled={uploading}
                 >
                   <FriendAvatar name={friendName} photoUrl={friendPhoto} size="lg" />
-                  {/* Camera overlay */}
                   <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
                     {uploading ? (
                       <Loader2 className="h-5 w-5 text-white animate-spin" />
@@ -176,7 +171,6 @@ export function SettingsDialog({
                     </div>
                   )}
                 </button>
-                {/* Remove button */}
                 {friendPhoto && !uploading && (
                   <button
                     type="button"
@@ -188,7 +182,7 @@ export function SettingsDialog({
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                {friendPhoto ? t.changePhoto : t.changePhoto}
+                {t.changePhoto}
               </p>
               <input
                 ref={fileInputRef}
@@ -199,136 +193,160 @@ export function SettingsDialog({
               />
             </div>
 
-            {/* Friend name */}
-            <div className="space-y-2">
-              <Label htmlFor="friendName">{t.friendName}</Label>
-              <Input
-                id="friendName"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t.friendNamePlaceholder}
-                maxLength={50}
-                onKeyDown={(e) => e.key === "Enter" && handleSave()}
-              />
+            {/* iOS grouped settings — Friend section */}
+            <div className="px-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 px-2">
+                {t.friendName}
+              </p>
+              <div className="rounded-2xl border bg-card overflow-hidden">
+                <div className="px-4 py-3">
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={t.friendNamePlaceholder}
+                    maxLength={50}
+                    onKeyDown={(e) => e.key === "Enter" && handleSave()}
+                    className="border-0 p-0 h-auto text-[15px] shadow-none focus-visible:ring-0"
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* Preferred currency */}
-            <div className="space-y-2">
-              <Label>{t.preferredCurrency}</Label>
-              <Select
-                value={preferredCurrency || "none"}
-                onValueChange={(v) =>
-                  onPreferredCurrencyChange(v === "none" ? undefined : (v as Currency))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">{t.noCurrencyConversion}</SelectItem>
-                  {CURRENCIES.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {c.symbol} {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Preferred currency section */}
+            <div className="px-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 px-2">
+                {t.preferredCurrency}
+              </p>
+              <div className="rounded-2xl border bg-card overflow-hidden">
+                <div className="px-4 py-1.5">
+                  <Select
+                    value={preferredCurrency || "none"}
+                    onValueChange={(v) =>
+                      onPreferredCurrencyChange(v === "none" ? undefined : (v as Currency))
+                    }
+                  >
+                    <SelectTrigger className="border-0 p-0 h-auto py-2 shadow-none focus:ring-0 text-[15px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{t.noCurrencyConversion}</SelectItem>
+                      {CURRENCIES.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>
+                          {c.symbol} {c.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
 
             {/* Invite code (if partner hasn't joined yet) */}
             {inviteCode && !partnerJoined && (
-              <>
-                <Separator />
-                <div className="space-y-2">
-                  <Label>{t.yourInviteCode}</Label>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 rounded-md border bg-muted/50 px-3 py-2 text-center font-mono text-sm tracking-widest select-all">
+              <div className="px-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 px-2">
+                  {t.yourInviteCode}
+                </p>
+                <div className="rounded-2xl border bg-card overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-3">
+                    <div className="flex-1 font-mono text-sm tracking-widest select-all">
                       {inviteCode}
                     </div>
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="icon"
-                      className="h-9 w-9 shrink-0"
+                      className="h-8 w-8 shrink-0 rounded-full"
                       onClick={handleCopyInvite}
                     >
                       {copied ? (
-                        <Check className="h-3.5 w-3.5" />
+                        <Check className="h-4 w-4 text-emerald-500" />
                       ) : (
-                        <Copy className="h-3.5 w-3.5" />
+                        <Copy className="h-4 w-4" />
                       )}
                     </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">{t.inviteDesc}</p>
                 </div>
-              </>
+                <p className="text-xs text-muted-foreground mt-1.5 px-2">{t.inviteDesc}</p>
+              </div>
             )}
 
-            {/* Add friend / Join ledger */}
-            <Separator />
-            <div className="space-y-2">
-              <Label>{t.friends}</Label>
-              <Button
-                variant="outline"
-                className="w-full gap-2"
-                onClick={() => {
-                  onOpenChange(false);
-                  onAddFriend();
-                }}
-              >
-                <Plus className="h-4 w-4" />
-                {t.addFriend}
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full gap-2"
-                onClick={() => {
-                  onOpenChange(false);
-                  onJoinLedger();
-                }}
-              >
-                <UserPlus className="h-4 w-4" />
-                {t.joinLedger}
-              </Button>
+            {/* Friends section — iOS grouped rows */}
+            <div className="px-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 px-2">
+                {t.friends}
+              </p>
+              <div className="rounded-2xl border bg-card overflow-hidden">
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-3 px-4 py-3 transition-colors active:bg-accent/50"
+                  onClick={() => {
+                    onOpenChange(false);
+                    onAddFriend();
+                  }}
+                >
+                  <Plus className="h-4 w-4 text-primary" />
+                  <span className="flex-1 text-[15px] text-start text-primary">{t.addFriend}</span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/30" />
+                </button>
+                <div className="ms-[2.75rem] border-b border-separator" />
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-3 px-4 py-3 transition-colors active:bg-accent/50"
+                  onClick={() => {
+                    onOpenChange(false);
+                    onJoinLedger();
+                  }}
+                >
+                  <UserPlus className="h-4 w-4 text-primary" />
+                  <span className="flex-1 text-[15px] text-start text-primary">{t.joinLedger}</span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/30" />
+                </button>
+              </div>
             </div>
 
-            {/* Account info + logout */}
-            <Separator />
-            <div className="space-y-3">
-              {userEmail && (
-                <p className="text-xs text-muted-foreground truncate">
-                  {userEmail}
-                </p>
-              )}
-              <Button
-                variant="outline"
-                className="w-full gap-2 text-destructive hover:text-destructive"
-                onClick={onLogout}
-              >
-                <LogOut className="h-4 w-4" />
-                {t.logout}
-              </Button>
-
-              {/* Delete friend */}
-              {showDeleteFriend && onDeleteFriend && (
-                <Button
-                  variant="outline"
-                  className="w-full gap-2 text-destructive hover:text-destructive border-destructive/30"
-                  onClick={() => setDeleteConfirmOpen(true)}
+            {/* Account section */}
+            <div className="px-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 px-2">
+                {userEmail || "Account"}
+              </p>
+              <div className="rounded-2xl border bg-card overflow-hidden">
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-3 px-4 py-3 transition-colors active:bg-accent/50"
+                  onClick={onLogout}
                 >
-                  <Trash2 className="h-4 w-4" />
-                  {t.deleteFriend}
-                </Button>
-              )}
+                  <LogOut className="h-4 w-4 text-destructive" />
+                  <span className="flex-1 text-[15px] text-start text-destructive">{t.logout}</span>
+                </button>
+
+                {showDeleteFriend && onDeleteFriend && (
+                  <>
+                    <div className="ms-[2.75rem] border-b border-separator" />
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-3 px-4 py-3 transition-colors active:bg-accent/50"
+                      onClick={() => setDeleteConfirmOpen(true)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                      <span className="flex-1 text-[15px] text-start text-destructive">{t.deleteFriend}</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Save button */}
+            <div className="px-4 pt-2">
+              <Button
+                className="w-full h-12 rounded-2xl text-[15px] font-semibold"
+                onClick={handleSave}
+              >
+                {t.save}
+              </Button>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              {t.cancel}
-            </Button>
-            <Button onClick={handleSave}>{t.save}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
       {/* Delete confirmation */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>

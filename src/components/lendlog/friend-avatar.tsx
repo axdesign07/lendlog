@@ -30,7 +30,7 @@ export function FriendAvatar({ name, photoUrl, size = "md", className }: FriendA
       <div
         className={cn(
           container,
-          "relative shrink-0 overflow-hidden rounded-full",
+          "relative shrink-0 overflow-hidden rounded-full ring-2 ring-background",
           className
         )}
       >
@@ -50,11 +50,13 @@ export function FriendAvatar({ name, photoUrl, size = "md", className }: FriendA
     <div
       className={cn(
         container,
-        "flex shrink-0 items-center justify-center rounded-full font-bold text-white",
+        "flex shrink-0 items-center justify-center rounded-full font-bold text-white ring-2 ring-background",
         text,
         className
       )}
-      style={{ backgroundColor: `oklch(0.6 0.15 ${hue})` }}
+      style={{
+        background: `linear-gradient(145deg, oklch(0.65 0.18 ${hue}), oklch(0.55 0.15 ${(hue + 30) % 360}))`,
+      }}
     >
       {initial}
     </div>
