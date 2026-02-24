@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { softDeleteLedger as dbSoftDeleteLedger, restoreLedgerDb } from "@/lib/supabase-db";
+import { softDeleteLedger as dbSoftDeleteLedger, restoreLedgerDb, getPartnerEmail } from "@/lib/supabase-db";
 
 export interface Ledger {
   id: string;
@@ -17,6 +17,7 @@ export function useLedger(userId: string | null) {
   const [ledgers, setLedgers] = useState<Ledger[]>([]);
   const [selectedLedgerId, setSelectedLedgerId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [partnerEmails, setPartnerEmails] = useState<Map<string, string>>(new Map());
 
   const loadLedgers = useCallback(async () => {
     if (!userId) {
@@ -48,6 +49,25 @@ export function useLedger(userId: string | null) {
         } else {
           setSelectedLedgerId(mapped[0].id);
           localStorage.setItem(SELECTED_LEDGER_KEY, mapped[0].id);
+        }
+
+        // Fetch partner emails for ledgers that have a partner
+        const withPartner = mapped.filter((l) => l.user2Id);
+        if (withPartner.length > 0) {
+          Promise.all(
+            withPartner.map(async (l) => {
+              const email = await getPartnerEmail(l.id);
+              return [l.id, email] as const;
+            })
+          ).then((results) => {
+            setPartnerEmails((prev) => {
+              const next = new Map(prev);
+              for (const [lid, email] of results) {
+                if (email) next.set(lid, email);
+              }
+              return next;
+            });
+          });
         }
       } else {
         setLedgers([]);
@@ -175,6 +195,8 @@ export function useLedger(userId: string | null) {
       : selectedLedger.user1Id
     : null;
 
+  const partnerEmail = selectedLedgerId ? partnerEmails.get(selectedLedgerId) ?? null : null;
+
   return {
     ledgers,
     selectedLedger,
@@ -186,6 +208,8 @@ export function useLedger(userId: string | null) {
     deleteLedger,
     restoreLedger,
     partnerId,
+    partnerEmail,
+    partnerEmails,
     refresh: loadLedgers,
   };
 }

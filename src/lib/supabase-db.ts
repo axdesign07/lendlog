@@ -374,6 +374,17 @@ export async function getDeletedLedgers(userId: string): Promise<{ id: string; u
   }));
 }
 
+// --- Partner email lookup ---
+
+export async function getPartnerEmail(ledgerId: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc("get_partner_email", {
+    p_ledger_id: ledgerId,
+  });
+
+  if (error || !data) return null;
+  return data as string;
+}
+
 // --- Audit log operations ---
 
 async function createAuditLog(

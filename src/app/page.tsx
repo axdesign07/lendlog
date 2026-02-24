@@ -53,13 +53,15 @@ export default function Home() {
     createLedger,
     joinLedger,
     deleteLedger,
+    partnerEmail,
+    partnerEmails,
   } = useLedger(userId);
   const ledgerId = selectedLedgerId;
 
   const { entries, loading, addEntry, updateEntry, removeEntry, restoreEntry, approveEntry, rejectEntry, resendEntry } = useEntries(userId, ledgerId);
   const { settings, updateFriendName, updatePreferredCurrency, updateFriendPhoto } = useSettings(userId, ledgerId);
   const preferredCurrency = settings.preferredCurrency;
-  const { friendBalances, totalByCurrency, convertedTotal, loading: portfolioLoading } = usePortfolio(userId, ledgers, preferredCurrency);
+  const { friendBalances, totalByCurrency, convertedTotal, loading: portfolioLoading } = usePortfolio(userId, ledgers, preferredCurrency, partnerEmails);
 
   const [friendNames, setFriendNames] = useState<Map<string, string>>(new Map());
 
@@ -289,7 +291,12 @@ export default function Home() {
                   <span className="sr-only">{t.back}</span>
                 </Button>
                 <FriendAvatar name={settings.friendName} photoUrl={settings.friendPhoto} size="sm" />
-                <h1 className="text-base font-bold tracking-tight">{settings.friendName}</h1>
+                <div className="min-w-0">
+                  <h1 className="text-base font-bold tracking-tight leading-tight">{settings.friendName}</h1>
+                  {partnerEmail && (
+                    <p className="text-[11px] text-muted-foreground truncate leading-tight">{partnerEmail}</p>
+                  )}
+                </div>
               </div>
             )}
             {headerRight}
@@ -409,7 +416,7 @@ export default function Home() {
 
         {/* Sheets & Dialogs */}
         <AddEntrySheet open={sheetOpen} onOpenChange={setSheetOpen} editEntry={editEntry} t={t} onSubmit={handleSubmit} ledgers={ledgers.map((l) => ({ id: l.id, friendName: friendNames.get(l.id) || "Friend" }))} currentLedgerId={selectedLedgerId} />
-        <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} friendName={settings.friendName} friendPhoto={settings.friendPhoto} onFriendPhotoChange={updateFriendPhoto} t={t} onSave={updateFriendName} onLogout={signOut} inviteCode={selectedLedger?.inviteCode} partnerJoined={!!selectedLedger?.user2Id} userEmail={user.email} onAddFriend={handleCreateNew} onJoinLedger={handleJoinNew} preferredCurrency={preferredCurrency} onPreferredCurrencyChange={updatePreferredCurrency} onDeleteFriend={handleDeleteFriend} showDeleteFriend={view === "friend"} />
+        <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} friendName={settings.friendName} friendPhoto={settings.friendPhoto} onFriendPhotoChange={updateFriendPhoto} t={t} onSave={updateFriendName} onLogout={signOut} inviteCode={selectedLedger?.inviteCode} partnerJoined={!!selectedLedger?.user2Id} partnerEmail={partnerEmail ?? undefined} userEmail={user.email} onAddFriend={handleCreateNew} onJoinLedger={handleJoinNew} preferredCurrency={preferredCurrency} onPreferredCurrencyChange={updatePreferredCurrency} onDeleteFriend={handleDeleteFriend} showDeleteFriend={view === "friend"} />
         <HistorySheet open={historyOpen} onOpenChange={setHistoryOpen} t={t} locale={locale} onRestore={restoreEntry} />
         <ExportSheet open={exportOpen} onOpenChange={setExportOpen} entries={entries} friendName={settings.friendName} t={t} />
         <MigrationDialog open={migrationOpen} onOpenChange={setMigrationOpen} entryCount={migrationCount} onMigrate={handleMigrate} onSkip={handleSkip} />

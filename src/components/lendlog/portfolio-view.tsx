@@ -377,6 +377,9 @@ function FriendRow({
                   </span>
                 )}
               </div>
+              {friend.partnerEmail && (
+                <p className="text-[11px] text-muted-foreground truncate">{friend.partnerEmail}</p>
+              )}
               {hasBalance ? (
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
                   {showConverted && (

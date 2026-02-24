@@ -15,12 +15,14 @@ export interface FriendBalance {
   balances: NetBalance[];
   hasPartner: boolean;
   convertedTotal?: number;
+  partnerEmail?: string;
 }
 
 export function usePortfolio(
   userId: string | null,
   ledgers: Ledger[],
-  preferredCurrency?: Currency
+  preferredCurrency?: Currency,
+  partnerEmails?: Map<string, string>
 ) {
   const [friendBalances, setFriendBalances] = useState<FriendBalance[]>([]);
   const [totalByCurrency, setTotalByCurrency] = useState<NetBalance[]>([]);
@@ -82,6 +84,7 @@ export function usePortfolio(
           friendPhoto: photoMap.get(ledger.id),
           balances,
           hasPartner: !!ledger.user2Id,
+          partnerEmail: partnerEmails?.get(ledger.id),
         };
 
         // Convert per-friend total if we have rates + preferred currency
@@ -109,7 +112,7 @@ export function usePortfolio(
     } finally {
       setLoading(false);
     }
-  }, [userId, ledgers, flipPerspective, preferredCurrency, rates]);
+  }, [userId, ledgers, flipPerspective, preferredCurrency, rates, partnerEmails]);
 
   useEffect(() => {
     loadPortfolio();

@@ -137,6 +137,7 @@ const translations = {
     chooseCurrency: "Choose your currency",
     chooseCurrencyDesc: "This will be used to show approximate totals across all currencies",
     continue: "Continue",
+    connectedWith: "Connected with",
   },
   fr: {
     appName: "LendLog",
@@ -246,6 +247,7 @@ const translations = {
     chooseCurrency: "Choisissez votre devise",
     chooseCurrencyDesc: "Elle sera utilis\u00E9e pour afficher les totaux approximatifs dans toutes les devises",
     continue: "Continuer",
+    connectedWith: "Connect\u00E9 avec",
   },
   ar: {
     appName: "LendLog",
@@ -355,6 +357,7 @@ const translations = {
     chooseCurrency: "\u0627\u062E\u062A\u0631 \u0639\u0645\u0644\u062A\u0643",
     chooseCurrencyDesc: "\u0633\u062A\u064F\u0633\u062A\u062E\u062F\u0645 \u0644\u0639\u0631\u0636 \u0627\u0644\u0645\u062C\u0627\u0645\u064A\u0639 \u0627\u0644\u062A\u0642\u0631\u064A\u0628\u064A\u0629 \u0639\u0628\u0631 \u062C\u0645\u064A\u0639 \u0627\u0644\u0639\u0645\u0644\u0627\u062A",
     continue: "\u0645\u062A\u0627\u0628\u0639\u0629",
+    connectedWith: "\u0645\u062A\u0635\u0644 \u0645\u0639",
   },
   darija: {
     appName: "LendLog",
@@ -464,6 +467,7 @@ const translations = {
     chooseCurrency: "\u062E\u062A\u0627\u0631 \u0627\u0644\u0639\u0645\u0644\u0629 \u062F\u064A\u0627\u0644\u0643",
     chooseCurrencyDesc: "\u063A\u0627\u062F\u064A \u062A\u062A\u0633\u062A\u0639\u0645\u0644 \u0628\u0627\u0634 \u062A\u0628\u0627\u0646 \u0627\u0644\u0645\u062C\u0627\u0645\u064A\u0639 \u0627\u0644\u062A\u0642\u0631\u064A\u0628\u064A\u0629 \u0641 \u0643\u0627\u0639 \u0627\u0644\u0639\u0645\u0644\u0627\u062A",
     continue: "\u0643\u0645\u0644",
+    connectedWith: "\u0645\u0643\u0648\u0646\u064A\u0643\u062A\u064A \u0645\u0639",
   },
 };
 

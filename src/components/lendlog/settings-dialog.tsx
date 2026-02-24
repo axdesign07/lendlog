@@ -45,6 +45,7 @@ interface SettingsDialogProps {
   onLogout: () => void;
   inviteCode?: string;
   partnerJoined?: boolean;
+  partnerEmail?: string;
   userEmail?: string;
   onAddFriend: () => void;
   onJoinLedger: () => void;
@@ -65,6 +66,7 @@ export function SettingsDialog({
   onLogout,
   inviteCode,
   partnerJoined,
+  partnerEmail,
   userEmail,
   onAddFriend,
   onJoinLedger,
@@ -211,6 +213,20 @@ export function SettingsDialog({
                 </div>
               </div>
             </div>
+
+            {/* Partner email — shown when partner has joined */}
+            {partnerJoined && partnerEmail && (
+              <div className="px-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 px-2">
+                  {t.connectedWith}
+                </p>
+                <div className="rounded-2xl border bg-card overflow-hidden">
+                  <div className="px-4 py-3">
+                    <p className="text-[15px] text-muted-foreground select-all">{partnerEmail}</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Preferred currency section */}
             <div className="px-4">
