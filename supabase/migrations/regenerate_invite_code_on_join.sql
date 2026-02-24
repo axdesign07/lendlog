@@ -1,5 +1,8 @@
 -- Update join_ledger_by_invite to regenerate the invite code after a partner joins.
 -- This prevents the old invite code from being reused by strangers.
+-- DROP first because the return type changed from the original function.
+
+DROP FUNCTION IF EXISTS join_ledger_by_invite(text);
 
 CREATE OR REPLACE FUNCTION join_ledger_by_invite(code TEXT)
 RETURNS SETOF ledgers
