@@ -287,7 +287,7 @@ export async function deleteImage(url: string): Promise<void> {
 // --- Settings operations (per-user, per-ledger) ---
 
 export async function getSettings(userId: string, ledgerId?: string): Promise<AppSettings> {
-  if (!ledgerId) return { friendName: "Friend" };
+  if (!ledgerId) return { friendName: "Friend", preferredCurrency: "MAD" as const };
 
   const { data, error } = await supabase
     .from("settings")
@@ -296,10 +296,10 @@ export async function getSettings(userId: string, ledgerId?: string): Promise<Ap
     .eq("ledger_id", ledgerId)
     .single();
 
-  if (error || !data) return { friendName: "Friend" };
+  if (error || !data) return { friendName: "Friend", preferredCurrency: "MAD" as const };
   return {
     friendName: data.friend_name,
-    preferredCurrency: data.preferred_currency || undefined,
+    preferredCurrency: data.preferred_currency || ("MAD" as const),
     friendPhoto: data.friend_photo || undefined,
   };
 }

@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import type { AppSettings, Currency } from "@/types";
 
 export function useSettings(userId: string | null, ledgerId?: string | null) {
-  const [settings, setSettings] = useState<AppSettings>({ friendName: "Friend" });
+  const [settings, setSettings] = useState<AppSettings>({ friendName: "Friend", preferredCurrency: "MAD" });
   const [loading, setLoading] = useState(true);
 
   const loadSettings = useCallback(async () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { motion, useMotionValue, animate, AnimatePresence } from "motion/react";
 import { ChevronRight, TrendingUp, TrendingDown, Minus, Trash2 } from "lucide-react";
 import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
@@ -90,6 +90,14 @@ export function PortfolioView({
 
   const StateIcon = netState === "positive" ? TrendingUp : netState === "negative" ? TrendingDown : Minus;
 
+  const primaryBalance = useMemo(
+    () =>
+      totalByCurrency.length > 0
+        ? [...totalByCurrency].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))[0]
+        : null,
+    [totalByCurrency]
+  );
+
   const handleConfirmDelete = () => {
     if (!deleteTarget || !onDeleteFriend) return;
     const { ledgerId } = deleteTarget;
@@ -140,17 +148,20 @@ export function PortfolioView({
                   </motion.p>
                   <p className="text-xs text-muted-foreground mt-2">{t.approximateTotal}</p>
                 </div>
-              ) : totalByCurrency.length === 1 ? (
+              ) : primaryBalance && netState !== "mixed" ? (
                 <motion.p
                   dir="ltr"
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ ...springAnim, delay: 0.1 }}
-                  className="text-4xl font-extrabold tracking-tight leading-none"
+                  className={cn(
+                    "font-extrabold tracking-tight leading-none",
+                    totalByCurrency.length === 1 ? "text-4xl" : "text-3xl"
+                  )}
                   style={{ color: stateColor.accent }}
                 >
-                  {totalByCurrency[0].amount > 0 ? "+" : "\u2212"}
-                  {formatCurrency(Math.abs(totalByCurrency[0].amount), totalByCurrency[0].currency)}
+                  {primaryBalance.amount > 0 ? "+" : "\u2212"}
+                  {formatCurrency(Math.abs(primaryBalance.amount), primaryBalance.currency)}
                 </motion.p>
               ) : null}
 

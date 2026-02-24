@@ -134,6 +134,9 @@ const translations = {
     deletedFriends: "Deleted friends",
     changePhoto: "Change photo",
     removePhoto: "Remove photo",
+    chooseCurrency: "Choose your currency",
+    chooseCurrencyDesc: "This will be used to show approximate totals across all currencies",
+    continue: "Continue",
   },
   fr: {
     appName: "LendLog",
@@ -240,6 +243,9 @@ const translations = {
     deletedFriends: "Amis supprim\u00E9s",
     changePhoto: "Changer la photo",
     removePhoto: "Supprimer la photo",
+    chooseCurrency: "Choisissez votre devise",
+    chooseCurrencyDesc: "Elle sera utilis\u00E9e pour afficher les totaux approximatifs dans toutes les devises",
+    continue: "Continuer",
   },
   ar: {
     appName: "LendLog",
@@ -346,6 +352,9 @@ const translations = {
     deletedFriends: "\u0627\u0644\u0623\u0635\u062F\u0642\u0627\u0621 \u0627\u0644\u0645\u062D\u0630\u0648\u0641\u0648\u0646",
     changePhoto: "\u062A\u063A\u064A\u064A\u0631 \u0627\u0644\u0635\u0648\u0631\u0629",
     removePhoto: "\u062D\u0630\u0641 \u0627\u0644\u0635\u0648\u0631\u0629",
+    chooseCurrency: "\u0627\u062E\u062A\u0631 \u0639\u0645\u0644\u062A\u0643",
+    chooseCurrencyDesc: "\u0633\u062A\u064F\u0633\u062A\u062E\u062F\u0645 \u0644\u0639\u0631\u0636 \u0627\u0644\u0645\u062C\u0627\u0645\u064A\u0639 \u0627\u0644\u062A\u0642\u0631\u064A\u0628\u064A\u0629 \u0639\u0628\u0631 \u062C\u0645\u064A\u0639 \u0627\u0644\u0639\u0645\u0644\u0627\u062A",
+    continue: "\u0645\u062A\u0627\u0628\u0639\u0629",
   },
   darija: {
     appName: "LendLog",
@@ -452,6 +461,9 @@ const translations = {
     deletedFriends: "\u0627\u0644\u0635\u062D\u0627\u0628 \u0627\u0644\u0645\u062D\u064A\u062F\u064A\u0646",
     changePhoto: "\u0628\u062F\u0644 \u0627\u0644\u062A\u0635\u0648\u064A\u0631\u0629",
     removePhoto: "\u062D\u064A\u0651\u062F \u0627\u0644\u062A\u0635\u0648\u064A\u0631\u0629",
+    chooseCurrency: "\u062E\u062A\u0627\u0631 \u0627\u0644\u0639\u0645\u0644\u0629 \u062F\u064A\u0627\u0644\u0643",
+    chooseCurrencyDesc: "\u063A\u0627\u062F\u064A \u062A\u062A\u0633\u062A\u0639\u0645\u0644 \u0628\u0627\u0634 \u062A\u0628\u0627\u0646 \u0627\u0644\u0645\u062C\u0627\u0645\u064A\u0639 \u0627\u0644\u062A\u0642\u0631\u064A\u0628\u064A\u0629 \u0641 \u0643\u0627\u0639 \u0627\u0644\u0639\u0645\u0644\u0627\u062A",
+    continue: "\u0643\u0645\u0644",
   },
 };
 

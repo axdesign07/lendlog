@@ -8,7 +8,7 @@ import { useLocale } from "@/hooks/use-locale";
 import { useAuth } from "@/hooks/use-auth";
 import { useLedger } from "@/hooks/use-ledger";
 import { usePortfolio } from "@/hooks/use-portfolio";
-import { getAllSettings } from "@/lib/supabase-db";
+import { getAllSettings, saveSettings } from "@/lib/supabase-db";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -39,6 +39,7 @@ type View = "dashboard" | "friend";
 
 export default function Home() {
   const { user, loading: authLoading, signOut } = useAuth();
+  const [pendingCurrency, setPendingCurrency] = useState<Currency>("MAD");
   const { locale, setLocale, t } = useLocale();
   const { theme, toggle: toggleTheme } = useTheme();
 
@@ -194,7 +195,27 @@ export default function Home() {
   }
 
   if (ledgers.length === 0) {
-    return <OnboardingPage t={t} ledger={null} onCreateLedger={createLedger} onJoinLedger={joinLedger} />;
+    return (
+      <OnboardingPage
+        t={t}
+        ledger={null}
+        onCurrencySelected={(c) => setPendingCurrency(c)}
+        onCreateLedger={async () => {
+          const l = await createLedger();
+          if (l && userId) {
+            await saveSettings({ friendName: "Friend", preferredCurrency: pendingCurrency }, userId, l.id);
+          }
+          return l;
+        }}
+        onJoinLedger={async (code) => {
+          const l = await joinLedger(code);
+          if (l && userId) {
+            await saveSettings({ friendName: "Friend", preferredCurrency: pendingCurrency }, userId, l.id);
+          }
+          return l;
+        }}
+      />
+    );
   }
 
   if (joinDialogOpen) {
@@ -202,6 +223,7 @@ export default function Home() {
       <OnboardingPage
         t={t}
         ledger={null}
+        skipCurrencyStep
         onCreateLedger={async () => { const l = await createLedger(); setJoinDialogOpen(false); return l; }}
         onJoinLedger={async (code) => { const l = await joinLedger(code); setJoinDialogOpen(false); return l; }}
       />

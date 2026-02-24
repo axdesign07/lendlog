@@ -73,10 +73,14 @@ export function BalanceSummary({
   );
 
   const hasMultipleCurrencies = balances.length > 1;
-  const convertedTotal =
-    preferredCurrency && rates && hasMultipleCurrencies
-      ? convertBalances(balances, preferredCurrency, rates)
-      : null;
+  const needsConversion =
+    preferredCurrency &&
+    rates &&
+    balances.length > 0 &&
+    (hasMultipleCurrencies || balances[0].currency !== preferredCurrency);
+  const convertedTotal = needsConversion
+    ? convertBalances(balances, preferredCurrency, rates)
+    : null;
 
   const state = getOverallState(balances, convertedTotal);
 
@@ -184,7 +188,7 @@ export function BalanceSummary({
             )}
 
             {/* Currency breakdown pills */}
-            {hasMultipleCurrencies && (
+            {(hasMultipleCurrencies || (convertedTotal !== null && balances.length > 0)) && (
               <div className="flex flex-wrap gap-2">
                 {sortedBalances.map(({ currency, amount }, i) => (
                   <motion.div
